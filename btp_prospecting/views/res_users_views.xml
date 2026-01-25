@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_res_users_form_btp" model="ir.ui.view">
+        <field name="name">res.users.form.btp.round_robin</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='preferences']" position="inside">
+                <group string="BTP Prospecting">
+                    <field name="manager_id"/>
+                    <field name="btp_round_robin_weight"/>
+                    <field name="btp_is_unavailable"/>
+                    <field name="btp_is_overloaded"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>
+

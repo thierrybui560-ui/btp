@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Lead Reminder Email Template -->
+        <record id="email_template_lead_reminder" model="mail.template">
+            <field name="name">BTP Lead: Reminder</field>
+            <field name="model_id" ref="model_btp_lead"/>
+            <field name="subject">Lead Reminder: {{ object.name }}</field>
+            <field name="email_from">{{ object.create_uid.email_formatted or user.email_formatted }}</field>
+            <field name="email_to">{{ object.user_id.email_formatted }}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p>Hello <t t-esc="object.user_id.name"/>,</p>
+                    <p>This is a reminder for the following lead:</p>
+                    <ul>
+                        <li><strong>Lead:</strong> <t t-esc="object.name"/></li>
+                        <li><strong>Site:</strong> <t t-esc="object.site_name or 'N/A'"/></li>
+                        <li><strong>Client:</strong> <t t-esc="object.partner_id.name or object.partner_name or 'N/A'"/></li>
+                        <li><strong>Stage:</strong> <t t-esc="object.stage_id.name or 'N/A'"/></li>
+                        <li><strong>Next Reminder:</strong> <t t-esc="object.next_reminder_date or 'N/A'"/></li>
+                    </ul>
+                    <p>Please follow up on this lead as soon as possible.</p>
+                    <p>Best regards,<br/>BTP Prospecting System</p>
+                </div>
+            </field>
+        </record>
+
+        <!-- Lead Escalation Email Template -->
+        <record id="email_template_lead_escalation" model="mail.template">
+            <field name="name">BTP Lead: Escalation</field>
+            <field name="model_id" ref="model_btp_lead"/>
+            <field name="subject">Lead Escalation: {{ object.name }} (Stalled for 30+ days)</field>
+            <field name="email_from">{{ object.create_uid.email_formatted or user.email_formatted }}</field>
+            <field name="email_to">{{ user.email_formatted }}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p>Hello <t t-esc="user.name"/>,</p>
+                    <p><strong>ATTENTION:</strong> The following lead has been stalled for 30+ days and requires management attention:</p>
+                    <ul>
+                        <li><strong>Lead:</strong> <t t-esc="object.name"/></li>
+                        <li><strong>Site:</strong> <t t-esc="object.site_name or 'N/A'"/></li>
+                        <li><strong>Assigned To:</strong> <t t-esc="object.user_id.name or 'Unassigned'"/></li>
+                        <li><strong>Stage:</strong> <t t-esc="object.stage_id.name or 'N/A'"/></li>
+                        <li><strong>Last Reminder:</strong> <t t-esc="object.last_reminder_date or 'N/A'"/></li>
+                        <li><strong>Budget:</strong> <t t-esc="object.budget or 0"/> <t t-esc="object.currency_id.symbol or ''"/></li>
+                    </ul>
+                    <p>Please review this lead and consider reassigning or taking appropriate action.</p>
+                    <p>Best regards,<br/>BTP Prospecting System</p>
+                </div>
+            </field>
+        </record>
+
+        <!-- Lead 6-Month Loop Reminder Email Template -->
+        <record id="email_template_lead_loop_reminder" model="mail.template">
+            <field name="name">BTP Lead: 6-Month Loop Reminder</field>
+            <field name="model_id" ref="model_btp_lead"/>
+            <field name="subject">6-Month Follow-up: {{ object.name }}</field>
+            <field name="email_from">{{ object.create_uid.email_formatted or user.email_formatted }}</field>
+            <field name="email_to">{{ object.user_id.email_formatted }}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p>Hello <t t-esc="object.user_id.name"/>,</p>
+                    <p>This lead was lost/unsuccessful 6 months ago. Consider re-contacting for new opportunities:</p>
+                    <ul>
+                        <li><strong>Lead:</strong> <t t-esc="object.name"/></li>
+                        <li><strong>Site:</strong> <t t-esc="object.site_name or 'N/A'"/></li>
+                        <li><strong>Client:</strong> <t t-esc="object.partner_id.name or object.partner_name or 'N/A'"/></li>
+                        <li><strong>Previous Status:</strong> <t t-esc="object.response_status or 'N/A'"/></li>
+                    </ul>
+                    <p>This is a good opportunity to check if there are new projects or needs.</p>
+                    <p>Best regards,<br/>BTP Prospecting System</p>
+                </div>
+            </field>
+        </record>
+    </data>
+</odoo>
+

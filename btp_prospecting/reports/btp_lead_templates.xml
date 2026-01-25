@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_btp_lead">
+        <t t-call="web.html_container">
+            <div class="header">
+                <div class="row">
+                    <div class="col-6">
+                        <h2>BTP Lead Report</h2>
+                    </div>
+                    <div class="col-6 text-end">
+                        <strong>Lead #<t t-esc="record.id"/></strong>
+                    </div>
+                </div>
+            </div>
+            <div class="article">
+                <div class="row">
+                    <div class="col-12">
+                        <h3><t t-esc="record.name"/></h3>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-6">
+                        <strong>Site Name:</strong> <t t-esc="record.site_name or ''"/>
+                    </div>
+                    <div class="col-6">
+                        <strong>Stage:</strong> <t t-esc="record.stage_id.name or ''"/>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-6">
+                        <strong>Assigned To:</strong> <t t-esc="record.user_id.name or ''"/>
+                    </div>
+                    <div class="col-6">
+                        <strong>Origin:</strong> <t t-esc="dict(record._fields['origin'].selection).get(record.origin, '')"/>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-12">
+                        <strong>Site Address:</strong> <t t-esc="record.site_address or ''"/>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-6">
+                        <strong>Budget:</strong> <t t-esc="record.budget or 0"/> <t t-esc="record.currency_id.symbol or ''"/>
+                    </div>
+                    <div class="col-6">
+                        <strong>Expected Revenue:</strong> <t t-esc="record.expected_revenue or 0"/> <t t-esc="record.currency_id.symbol or ''"/>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <strong>Description:</strong>
+                        <div t-raw="record.description or ''"/>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+</odoo>
+

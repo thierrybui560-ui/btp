@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Main Menu -->
+    <menuitem id="menu_btp_prospecting_root"
+              name="BTP Prospecting"
+              sequence="100"/>
+
+    <!-- Leads Menu -->
+    <menuitem id="menu_btp_lead"
+              name="Leads"
+              parent="menu_btp_prospecting_root"
+              action="action_btp_lead"
+              sequence="10"/>
+
+    <menuitem id="menu_btp_lead_all"
+              name="All Leads"
+              parent="menu_btp_lead"
+              action="action_btp_lead_all"
+              sequence="10"/>
+
+    <menuitem id="menu_btp_lead_open"
+              name="Open Leads"
+              parent="menu_btp_lead"
+              action="action_btp_lead_open"
+              sequence="20"/>
+
+    <!-- Configuration Menu -->
+    <menuitem id="menu_btp_configuration"
+              name="Configuration"
+              parent="menu_btp_prospecting_root"
+              sequence="90"
+              groups="btp_prospecting.group_btp_manager"/>
+
+    <menuitem id="menu_btp_lead_stage"
+              name="Lead Stages"
+              parent="menu_btp_configuration"
+              action="action_btp_lead_stage"
+              sequence="10"
+              groups="btp_prospecting.group_btp_manager"/>
+
+    <menuitem id="menu_btp_lead_assignment_rule"
+              name="Assignment Rules"
+              parent="menu_btp_configuration"
+              action="action_btp_lead_assignment_rule"
+              sequence="20"
+              groups="btp_prospecting.group_btp_manager"/>
+
+</odoo>
+

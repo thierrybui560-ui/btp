@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Lead Report Action -->
+    <record id="action_report_btp_lead" model="ir.actions.report">
+        <field name="name">BTP Lead Report</field>
+        <field name="model">btp.lead</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">btp_prospecting.report_btp_lead</field>
+        <field name="report_file">btp_prospecting.report_btp_lead</field>
+        <field name="binding_model_id" ref="model_btp_lead"/>
+        <field name="binding_type">report</field>
+    </record>
+
+</odoo>
+

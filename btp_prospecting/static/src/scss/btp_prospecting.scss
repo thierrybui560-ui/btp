@@ -1,0 +1,32 @@
+// Kanban card polish for BTP Leads
+.btp_lead_kanban_card {
+  background: #fff;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.btp_lead_kanban_card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.btp_lead_kanban_card .o_kanban_record_title {
+  font-weight: 600;
+}
+
+.btp_lead_kanban_card .o_kanban_record_subtitle {
+  color: #6c757d;
+}
+
+.btp_lead_kanban_card .o_tag {
+  border-radius: 12px;
+  padding: 2px 8px;
+}
+
+.btp_lead_kanban_card .btn-outline-primary {
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.btp_lead_kanban_card.btp-open {
+  border-left: 3px solid #875a7b;
+}
+

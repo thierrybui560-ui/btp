@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Lead Stage Tree View -->
+    <record id="view_btp_lead_stage_tree" model="ir.ui.view">
+        <field name="name">btp.lead.stage.tree</field>
+        <field name="model">btp.lead.stage</field>
+        <field name="arch" type="xml">
+            <list string="Stages" default_order="sequence">
+                <field name="sequence" widget="handle"/>
+                <field name="name" string="Stage Name"/>
+                <field name="qualification_status" string="Qualification Status"/>
+                <field name="require_reminder" widget="boolean_toggle" string="Require Reminder"/>
+                <field name="is_won" widget="boolean_toggle" string="Won Stage"/>
+                <field name="is_lost" widget="boolean_toggle" string="Lost Stage"/>
+                <field name="fold" widget="boolean_toggle" string="Folded"/>
+                <field name="lead_count" string="Leads" sum="Total"/>
+                <field name="color" widget="color_picker" optional="hide" string="Color"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Lead Stage Form View -->
+    <record id="view_btp_lead_stage_form" model="ir.ui.view">
+        <field name="name">btp.lead.stage.form</field>
+        <field name="model">btp.lead.stage</field>
+        <field name="arch" type="xml">
+            <form string="Lead Stage">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="sequence"/>
+                            <field name="qualification_status"/>
+                        </group>
+                        <group>
+                            <field name="require_reminder"/>
+                            <field name="fold"/>
+                            <field name="color" widget="color_picker"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="is_won"/>
+                            <field name="is_lost"/>
+                        </group>
+                        <group>
+                            <field name="company_id"/>
+                            <field name="lead_count" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Lead Stage Action -->
+    <record id="action_btp_lead_stage" model="ir.actions.act_window">
+        <field name="name">Lead Stages</field>
+        <field name="res_model">btp.lead.stage</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>
+

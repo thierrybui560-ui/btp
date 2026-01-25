@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Lead Merge Wizard Form View -->
+    <record id="view_btp_lead_merge_wizard_form" model="ir.ui.view">
+        <field name="name">btp.lead.merge.wizard.form</field>
+        <field name="model">btp.lead.merge.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Merge Leads">
+                <group>
+                    <field name="lead_ids" widget="many2many_tags" readonly="1"/>
+                    <field name="target_lead_id" options="{'no_create': True}"/>
+                    <field name="merge_options" widget="radio" options="{'horizontal': true}"/>
+                </group>
+                <footer>
+                    <button string="Merge" name="action_merge" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Lead Merge Wizard Action -->
+    <record id="action_btp_lead_merge_wizard" model="ir.actions.act_window">
+        <field name="name">Merge Leads</field>
+        <field name="res_model">btp.lead.merge.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_btp_lead"/>
+        <field name="binding_view_types">list</field>
+    </record>
+
+    <!-- Lead Assign Wizard Form View -->
+    <record id="view_btp_lead_assign_wizard_form" model="ir.ui.view">
+        <field name="name">btp.lead.assign.wizard.form</field>
+        <field name="model">btp.lead.assign.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Assign Leads">
+                <group>
+                    <field name="lead_ids" widget="many2many_tags" readonly="1"/>
+                    <field name="user_id" options="{'no_create': True}"/>
+                    <field name="is_open"/>
+                </group>
+                <footer>
+                    <button string="Assign" name="action_assign" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Lead Assign Wizard Action -->
+    <record id="action_btp_lead_assign_wizard" model="ir.actions.act_window">
+        <field name="name">Assign Leads</field>
+        <field name="res_model">btp.lead.assign.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_btp_lead"/>
+        <field name="binding_view_types">list</field>
+    </record>
+
+</odoo>
+

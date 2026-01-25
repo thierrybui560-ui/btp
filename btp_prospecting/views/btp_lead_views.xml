@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Lead List View -->
+    <record id="view_btp_lead_tree" model="ir.ui.view">
+        <field name="name">btp.lead.tree</field>
+        <field name="model">btp.lead</field>
+        <field name="arch" type="xml">
+            <list string="Leads" decoration-info="is_open == True" decoration-warning="is_escalated == True" decoration-danger="is_duplicate == True">
+                <field name="name"/>
+                <field name="site_name"/>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+                <field name="stage_id" widget="badge" decoration-success="stage_id.is_won == True" decoration-danger="stage_id.is_lost == True"/>
+                <field name="qualification_status"/>
+                <field name="origin" widget="badge"/>
+                <field name="budget" sum="Total Budget"/>
+                <field name="expected_revenue" sum="Total Expected Revenue"/>
+                <field name="next_reminder_date"/>
+                <field name="is_open" invisible="1"/>
+                <field name="is_escalated" invisible="1"/>
+                <field name="is_duplicate" invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Lead Form View -->
+    <record id="view_btp_lead_form" model="ir.ui.view">
+        <field name="name">btp.lead.form</field>
+        <field name="model">btp.lead</field>
+        <field name="arch" type="xml">
+            <form string="BTP Lead">
+                <header>
+                    <button name="action_take_lead" string="Take Lead" type="object" 
+                            class="oe_highlight" modifiers="{'invisible': [('is_open', '=', False)]}"/>
+                    <button name="%(action_btp_lead_assign_wizard)d" string="Assign" type="action" 
+                            modifiers="{'invisible': [('is_open', '=', False)]}"
+                            context="{'default_lead_ids': [id]}"/>
+                    <button name="action_check_duplicates" string="Check Duplicates" type="object" 
+                            class="btn-secondary"/>
+                    <button name="action_convert_to_opportunity" string="Convert to Opportunity" type="object" 
+                            class="oe_highlight" modifiers="{'invisible': [('converted', '=', True)]}"/>
+                    <field name="stage_id" widget="statusbar" statusbar_visible="qualification_status"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_set_reminder" string="Set Reminder" type="object" 
+                                class="oe_stat_button" icon="fa-calendar"/>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="name" placeholder="Lead title..."/>
+                            <field name="site_name"/>
+                            <field name="origin" widget="radio" options="{'horizontal': true}"/>
+                            <field name="origin_detail"/>
+                            <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
+                        </group>
+                        <group>
+                            <field name="user_id" options="{'no_create': True}"/>
+                            <field name="is_open" modifiers="{'readonly': [('user_id', 'not in', [uid, False])]}"/>
+                            <field name="stage_id"/>
+                            <field name="qualification_status"/>
+                            <field name="converted" readonly="1"/>
+                            <field name="color" widget="color_picker"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Site Information" name="site_info">
+                            <group>
+                                <group>
+                                    <field name="site_address" placeholder="Full site address..."/>
+                                    <field name="site_city"/>
+                                    <field name="site_zip"/>
+                                    <field name="site_country_id"/>
+                                </group>
+                                <group>
+                                    <field name="site_type"/>
+                                    <field name="project_start_date"/>
+                                    <field name="project_duration"/>
+                                    <field name="tender_deadline"/>
+                                </group>
+                            </group>
+                        </page>
+                        
+                        <page string="Client/Prospect" name="client">
+                            <group>
+                                <group>
+                                    <field name="partner_id" options="{'no_create': True}"/>
+                                    <field name="partner_name" modifiers="{'invisible': [('partner_id', '!=', False)], 'required': [('partner_id', '=', False)]}"/>
+                                    <field name="contact_id" domain="[('parent_id', '=', partner_id)]" options="{'no_create': True}"/>
+                                </group>
+                                <group>
+                                    <field name="partner_email"/>
+                                    <field name="partner_phone"/>
+                                </group>
+                            </group>
+                        </page>
+                        
+                        <page string="Qualification" name="qualification">
+                            <group>
+                                <group>
+                                    <field name="budget"/>
+                                    <field name="currency_id" invisible="1"/>
+                                    <field name="probability" widget="percentage" options="{'step': 1}"/>
+                                    <field name="expected_revenue" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="competitor_ids" widget="many2many_tags"/>
+                                    <field name="response_status"/>
+                                    <field name="response_note" placeholder="Response details..."/>
+                                </group>
+                            </group>
+                        </page>
+                        
+                        <page string="Follow-up" name="followup">
+                            <group>
+                                <group>
+                                    <field name="next_reminder_date"/>
+                                    <field name="last_reminder_date" readonly="1"/>
+                                    <field name="reminder_count" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="is_escalated" readonly="1"/>
+                                    <field name="escalation_date" readonly="1"/>
+                                    <field name="escalation_reason" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        
+                        <page string="Multi-Company" name="multicompany" modifiers="{'invisible': [('company_id', '=', False)]}">
+                            <group>
+                                <field name="company_id"/>
+                                <field name="sharing_type"/>
+                                <field name="shared_company_ids" modifiers="{'invisible': [('sharing_type', '!=', 'shared')], 'required': [('sharing_type', '=', 'shared')]}"/>
+                            </group>
+                        </page>
+                        
+                        <page string="Duplicates" name="duplicates">
+                            <group col="4">
+                                <group>
+                                    <field name="is_duplicate"/>
+                                    <field name="original_lead_id"
+                                           modifiers="{'invisible': [('is_duplicate', '=', False)]}"/>
+                                </group>
+                                <group colspan="3">
+                                    <field name="duplicate_ids" nolabel="1" readonly="1">
+                                        <list>
+                                            <field name="name"/>
+                                            <field name="site_name"/>
+                                            <field name="partner_id"/>
+                                            <field name="user_id"/>
+                                            <field name="stage_id"/>
+                                        </list>
+                                    </field>
+                                </group>
+                            </group>
+                        </page>
+                        
+                        <page string="Description" name="description">
+                            <field name="description" placeholder="Detailed description of the lead..."/>
+                            <field name="note" placeholder="Internal notes (not visible to customer)..."/>
+                        </page>
+                        
+                        <page string="Statistics" name="statistics">
+                            <group>
+                                <group string="Communication">
+                                    <field name="email_count" widget="statinfo" string="Emails"/>
+                                    <field name="call_count" widget="statinfo" string="Calls"/>
+                                    <field name="meeting_count" widget="statinfo" string="Meetings"/>
+                                </group>
+                                <group string="Conversion">
+                                    <field name="converted_date" readonly="1"/>
+                                    <field name="opportunity_id" readonly="1"/>
+                                    <field name="quote_id" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Lead Kanban View -->
+    <record id="view_btp_lead_kanban" model="ir.ui.view">
+        <field name="name">btp.lead.kanban</field>
+        <field name="model">btp.lead</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="stage_id" class="o_kanban_small_column" quick_create="0">
+                <field name="name"/>
+                <field name="site_name"/>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+                <field name="stage_id"/>
+                <field name="budget"/>
+                <field name="expected_revenue"/>
+                <field name="next_reminder_date"/>
+                <field name="is_open"/>
+                <field name="is_escalated"/>
+                <field name="color"/>
+                <templates>
+                    <t t-name="card">
+                        <div t-attf-class="oe_kanban_card oe_kanban_global_click p-2 shadow-sm border rounded btp_lead_kanban_card #{record.is_open.raw_value ? 'btp-open' : ''}">
+                            <div class="oe_kanban_content">
+                                <div class="o_kanban_record_top mb-1">
+                                    <div class="o_kanban_record_headings">
+                                        <strong class="o_kanban_record_title">
+                                            <field name="name"/>
+                                        </strong>
+                                        <div class="o_kanban_record_subtitle text-muted small">
+                                            <field name="site_name"/>
+                                        </div>
+                                    </div>
+                                    <div class="o_kanban_record_top_right">
+                                        <field name="is_open" widget="boolean_toggle"/>
+                                    </div>
+                                </div>
+                                <div class="o_kanban_record_body d-flex flex-column gap-1">
+                                    <div class="text-muted small">
+                                        <field name="partner_id"/>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center gap-1">
+                                            <i class="fa fa-user text-muted"/>
+                                            <t t-if="record.user_id.raw_value">
+                                                <field name="user_id" widget="many2one_avatar_user"/>
+                                            </t>
+                                            <t t-else="">
+                                                <span class="text-muted small">Unassigned</span>
+                                            </t>
+                                        </div>
+                                        <div class="fw-semibold">
+                                            <field name="budget" widget="monetary"/>
+                                        </div>
+                                    </div>
+                                    <div class="text-muted small" t-if="record.next_reminder_date.raw_value">
+                                        <i class="fa fa-calendar-o me-1"/> <field name="next_reminder_date" widget="datetime"/>
+                                    </div>
+                                    <div class="mt-1" t-if="record.is_open.raw_value and !record.user_id.raw_value">
+                                        <button name="action_take_lead" type="object" class="btn btn-outline-primary btn-sm w-100 oe_kanban_action">
+                                            <i class="fa fa-hand-paper-o"/> Take Lead
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="o_kanban_record_bottom mt-2 pt-2 border-top d-flex justify-content-between align-items-center flex-wrap gap-1">
+                                    <div class="oe_kanban_bottom_left">
+                                        <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
+                                    </div>
+                                    <div class="oe_kanban_bottom_right">
+                                        <field name="stage_id" widget="badge" decoration-success="stage_id.is_won == True" decoration-danger="stage_id.is_lost == True"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Lead Search View -->
+    <record id="view_btp_lead_search" model="ir.ui.view">
+        <field name="name">btp.lead.search</field>
+        <field name="model">btp.lead</field>
+        <field name="arch" type="xml">
+            <search string="Search Leads">
+                <filter string="My Leads" name="my_leads" domain="[('user_id', '=', uid)]"/>
+                <filter string="Open Leads" name="open_leads" domain="[('is_open', '=', True)]"/>
+
+                <separator/>
+                <group>
+                    <filter string="Stage" name="group_stage" context="{'group_by': 'stage_id'}"/>
+                    <filter string="Assigned To" name="group_user" context="{'group_by': 'user_id'}"/>
+                    <filter string="Origin" name="group_origin" context="{'group_by': 'origin'}"/>
+                    <filter string="Site Type" name="group_site_type" context="{'group_by': 'site_type'}"/>
+                    <filter string="Qualification Status" name="group_qualification" context="{'group_by': 'qualification_status'}"/>
+                    <filter string="Creation Date" name="group_create_date" context="{'group_by': 'create_date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Lead Action -->
+    <record id="action_btp_lead" model="ir.actions.act_window">
+        <field name="name">Leads</field>
+        <field name="res_model">btp.lead</field>
+        <field name="view_mode">kanban,list,form,graph,pivot</field>
+        <field name="context">{'search_default_my_leads': 0}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first lead!
+            </p>
+            <p>
+                Leads represent potential business opportunities in the BTP industry.
+                Capture leads from various sources and track them through the qualification process.
+            </p>
+        </field>
+    </record>
+
+    <!-- Lead Action - All Leads -->
+    <record id="action_btp_lead_all" model="ir.actions.act_window">
+        <field name="name">All Leads</field>
+        <field name="res_model">btp.lead</field>
+        <field name="view_mode">kanban,list,form,graph,pivot</field>
+        <field name="domain">[]</field>
+    </record>
+
+    <!-- Lead Action - Open Leads -->
+    <record id="action_btp_lead_open" model="ir.actions.act_window">
+        <field name="name">Open Leads</field>
+        <field name="res_model">btp.lead</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('is_open', '=', True)]</field>
+        <field name="context">{'default_is_open': True}</field>
+    </record>
+
+</odoo>
+

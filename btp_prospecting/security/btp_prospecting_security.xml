@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Categories -->
+        <record id="module_category_btp" model="ir.module.category">
+            <field name="name">BTP</field>
+            <field name="description">Building and Public Works modules</field>
+            <field name="sequence">100</field>
+        </record>
+
+        <!-- Privilege for BTP groups -->
+        <record id="res_groups_privilege_btp" model="res.groups.privilege">
+            <field name="name">BTP Prospecting</field>
+            <field name="sequence">100</field>
+            <field name="category_id" ref="module_category_btp"/>
+        </record>
+
+        <!-- Groups -->
+        <record id="group_btp_salesperson" model="res.groups">
+            <field name="name">BTP Salesperson</field>
+            <field name="sequence">10</field>
+            <field name="privilege_id" ref="res_groups_privilege_btp"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        </record>
+
+        <record id="group_btp_non_sales" model="res.groups">
+            <field name="name">BTP Non-Sales</field>
+            <field name="sequence">15</field>
+            <field name="privilege_id" ref="res_groups_privilege_btp"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        </record>
+
+        <record id="group_btp_manager" model="res.groups">
+            <field name="name">BTP Manager</field>
+            <field name="sequence">20</field>
+            <field name="privilege_id" ref="res_groups_privilege_btp"/>
+            <field name="implied_ids" eval="[(4, ref('group_btp_salesperson'))]"/>
+        </record>
+
+        <record id="group_btp_admin" model="res.groups">
+            <field name="name">BTP Administrator</field>
+            <field name="sequence">30</field>
+            <field name="privilege_id" ref="res_groups_privilege_btp"/>
+            <field name="implied_ids" eval="[(4, ref('group_btp_manager'))]"/>
+        </record>
+
+        <!-- Record Rules -->
+        <!-- Salesperson: See own leads and open leads -->
+        <record id="btp_lead_rule_salesperson" model="ir.rule">
+            <field name="name">BTP Lead: Salesperson</field>
+            <field name="model_id" ref="model_btp_lead"/>
+            <field name="domain_force">[
+                '|',
+                ('is_open', '=', True),
+                ('user_id', '=', user.id)
+            ]</field>
+            <field name="perm_create" eval="False"/>
+            <field name="groups" eval="[(4, ref('group_btp_salesperson'))]"/>
+        </record>
+
+        <!-- Salesperson: allow create of own records without granting read access -->
+        <record id="btp_lead_rule_salesperson_create" model="ir.rule">
+            <field name="name">BTP Lead: Salesperson Create</field>
+            <field name="model_id" ref="model_btp_lead"/>
+            <field name="domain_force">[
+                ('create_uid', '=', user.id)
+            ]</field>
+            <field name="perm_read" eval="False"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('group_btp_salesperson'))]"/>
+        </record>
+
+        <!-- Non-sales: See leads they created or are assigned -->
+        <record id="btp_lead_rule_non_sales" model="ir.rule">
+            <field name="name">BTP Lead: Non-Sales</field>
+            <field name="model_id" ref="model_btp_lead"/>
+            <field name="domain_force">[
+                '|',
+                ('create_uid', '=', user.id),
+                ('user_id', '=', user.id)
+            ]</field>
+            <field name="groups" eval="[(4, ref('group_btp_non_sales'))]"/>
+        </record>
+
+        <!-- Manager: See own leads, open leads, and subordinates' leads (pyramidal) -->
+        <record id="btp_lead_rule_manager" model="ir.rule">
+            <field name="name">BTP Lead: Manager (Pyramidal)</field>
+            <field name="model_id" ref="model_btp_lead"/>
+            <field name="domain_force">[
+                '|',
+                '|',
+                ('is_open', '=', True),
+                ('user_id', '=', user.id),
+                ('user_id', 'in', user.all_subordinate_ids.ids)
+            ]</field>
+            <field name="groups" eval="[(4, ref('group_btp_manager'))]"/>
+        </record>
+
+        <!-- Admin: See all leads -->
+        <record id="btp_lead_rule_admin" model="ir.rule">
+            <field name="name">BTP Lead: Administrator</field>
+            <field name="model_id" ref="model_btp_lead"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_btp_admin'))]"/>
+        </record>
+
+        <!-- Multi-company rule -->
+        <record id="btp_lead_rule_company" model="ir.rule">
+            <field name="name">BTP Lead: Multi-Company</field>
+            <field name="model_id" ref="model_btp_lead"/>
+            <field name="domain_force">[
+                '|',
+                ('company_id', '=', False),
+                '|',
+                ('company_id', '=', company_id),
+                '|',
+                ('sharing_type', '=', 'global'),
+                '&amp;',
+                ('sharing_type', '=', 'shared'),
+                ('shared_company_ids', 'in', company_id)
+            ]</field>
+            <field name="groups" eval="[(4, ref('group_btp_salesperson')), (4, ref('group_btp_non_sales')), (4, ref('group_btp_manager'))]"/>
+        </record>
+
+        <!-- Stage Rules -->
+        <record id="btp_lead_stage_rule_user" model="ir.rule">
+            <field name="name">BTP Lead Stage: User</field>
+            <field name="model_id" ref="model_btp_lead_stage"/>
+            <field name="domain_force">[
+                '|',
+                ('company_id', '=', False),
+                ('company_id', '=', company_id)
+            ]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <!-- Assignment Rule Rules -->
+        <record id="btp_lead_assignment_rule_rule_user" model="ir.rule">
+            <field name="name">BTP Lead Assignment Rule: User</field>
+            <field name="model_id" ref="model_btp_lead_assignment_rule"/>
+            <field name="domain_force">[
+                '|',
+                ('company_id', '=', False),
+                ('company_id', '=', company_id)
+            ]</field>
+            <field name="global" eval="True"/>
+        </record>
+    </data>
+</odoo>
+
