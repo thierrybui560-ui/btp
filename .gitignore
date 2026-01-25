@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Odoo
+*.pyc
+*.pyo
+*.log
+*.pot
+*.mo
+*.pot~
+*.swp
+*.swo
+*~
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Odoo specific
+odoo19/venv/
+odoo19/odoo/
+odoo19/addons/*/__pycache__/
+odoo19/addons/*/static/description/*.png
+odoo19/addons/*/static/description/*.jpg
+
+# Local config
+*.local
+local_settings.py
+
+# Build
+dist/
+build/
+*.egg-info/
+
