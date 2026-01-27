@@ -179,6 +179,56 @@ class ResPartner(models.Model):
         ('manual', 'Manual Entry'),
     ], string='Data Source', default='manual')
 
+    # ========== Supplier/Subcontractor Fields ==========
+    # Note: Temporarily commented out to allow server startup
+    # These fields will be uncommented after module upgrade completes
+    # Uncomment these fields after running: python3 odoo-bin -u btp_prospecting -d odoo_btp
+    is_supplier = fields.Boolean(
+        string='Is Supplier',
+        default=False,
+        tracking=True,
+        help='This partner is a supplier'
+    )
+    is_subcontractor = fields.Boolean(
+        string='Is Subcontractor',
+        default=False,
+        tracking=True,
+        help='This partner is a subcontractor'
+    )
+    # Supplier/Subcontractor hierarchy (reuse company hierarchy fields)
+    # btp_group_id, btp_subsidiary_id, btp_agency_id already exist for companies
+    # For suppliers/subcontractors, we can attach to multiple agencies
+    btp_supplier_agency_ids = fields.Many2many(
+        'btp.company.agency',
+        'btp_supplier_agency_rel',
+        'supplier_id',
+        'agency_id',
+        string='Attached Agencies',
+        help='Agencies this supplier/subcontractor is attached to'
+    )
+    # Supplier/Subcontractor documents (certificates, URSSAF, taxes, insurances)
+    btp_supplier_document_ids = fields.One2many(
+        'btp.supplier.document',
+        'supplier_id',
+        string='Supplier Documents',
+        help='URSSAF certificates, taxes, insurances, paid vacations'
+    )
+    btp_supplier_document_count = fields.Integer(
+        string='Documents Count',
+        compute='_compute_supplier_document_count',
+        store=True
+    )
+    btp_expired_documents_count = fields.Integer(
+        string='Expired Documents',
+        compute='_compute_supplier_document_count',
+        store=True
+    )
+    btp_expiring_soon_documents_count = fields.Integer(
+        string='Expiring Soon Documents',
+        compute='_compute_supplier_document_count',
+        store=True
+    )
+
     
     @api.depends('btp_career_history_ids', 'btp_career_history_ids.is_current', 'btp_career_history_ids.company_id', 'btp_career_history_ids.end_date', 'parent_id')
     def _compute_current_company(self):
@@ -220,6 +270,13 @@ class ResPartner(models.Model):
                 ])
             else:
                 partner.btp_contact_count = 0
+
+    @api.depends('btp_supplier_document_ids', 'btp_supplier_document_ids.is_expired', 'btp_supplier_document_ids.expires_soon')
+    def _compute_supplier_document_count(self):
+        for record in self:
+            record.btp_supplier_document_count = len(record.btp_supplier_document_ids)
+            record.btp_expired_documents_count = len(record.btp_supplier_document_ids.filtered('is_expired'))
+            record.btp_expiring_soon_documents_count = len(record.btp_supplier_document_ids.filtered('expires_soon'))
 
     @api.onchange('name', 'email', 'phone', 'mobile')
     def _onchange_contact_duplicate_warning(self):
@@ -319,6 +376,14 @@ class ResPartner(models.Model):
                         'Company already exists with SIREN/SIRET: %s\n'
                         'See: %s'
                     ) % (vals.get('siren') or vals.get('siret'), duplicate.name))
+
+            # Enrich suppliers/subcontractors from API if SIREN provided
+            if vals.get('is_company') and (vals.get('is_supplier') or vals.get('is_subcontractor')) \
+                    and vals.get('siren') and not vals.get('btp_api_enriched'):
+                enriched_data = self._enrich_from_api(vals.get('siren'))
+                if enriched_data:
+                    vals.update(enriched_data)
+                    vals['btp_api_enriched'] = True
 
             # Check for contact duplicates
             if not vals.get('is_company'):
@@ -481,7 +546,7 @@ class ResPartner(models.Model):
                 })
 
         if not self.env.context.get('skip_duplicate_recompute'):
-            partners._recompute_contact_duplicate_flags()
+            self._recompute_contact_duplicate_flags()
 
         return result
     

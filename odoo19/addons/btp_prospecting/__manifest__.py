@@ -32,6 +32,19 @@ Module 2 - Clients & Contacts Management:
 * Pyramidal access rights and attribution logic
 * Multi-company client sharing with distinct commercial conditions
 * Reports and KPIs (active clients, coverage rate, career history)
+
+Module 3 - Quotes & Articles:
+-------------------------------
+* Hierarchical quote structure (Lot → Title → Subtitle → Item)
+* Centralized article base with families and subfamilies
+* Article document management (TS, PV, SDS, notices) with expiration alerts
+* Price history tracking by supplier
+* Supplier and subcontractor management with hierarchy
+* Regulatory document management (URSSAF, taxes, insurances) with expiration alerts
+* Quote numbering system (YYYYMMNNN format with alphabetical revisions)
+* Quote workflow (creation, control, sending, follow-up)
+* Labor calculation (internal yield or subcontracting)
+* Quote-to-order conversion tracking
     """,
     'author': 'BTP Solutions',
     'website': 'https://www.example.com',
@@ -43,6 +56,7 @@ Module 2 - Clients & Contacts Management:
         'crm',
         'sale',
         'project',
+        'purchase',
     ],
     'external_dependencies': {
         'python': ['requests'],
@@ -52,6 +66,10 @@ Module 2 - Clients & Contacts Management:
         'security/ir.model.access.csv',
         'data/btp_lead_stage_data.xml',
         'data/btp_lead_reminder_cron.xml',
+        'data/btp_document_expiration_cron.xml',
+        'data/btp_quote_sequence.xml',
+        'data/btp_quote_item_product.xml',
+        'data/btp_quote_followup_cron.xml',
         'data/btp_email_templates.xml',
         'views/btp_lead_wizard_views.xml',
         'views/btp_lead_views.xml',
@@ -62,6 +80,11 @@ Module 2 - Clients & Contacts Management:
         'views/res_partner_views.xml',
         'views/btp_company_search_views.xml',
         'views/btp_company_site_views.xml',
+        'views/btp_article_views.xml',
+        'views/btp_supplier_views.xml',
+        'views/btp_quote_views.xml',
+        'views/btp_quote_reports_views.xml',
+        'views/btp_supplier_search_views.xml',
         'views/btp_prospecting_menus.xml',
         'reports/btp_lead_reports.xml',
         'reports/btp_lead_templates.xml',

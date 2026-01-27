@@ -102,5 +102,91 @@
               sequence="30"
               groups="btp_prospecting.group_btp_manager"/>
 
+    <!-- Quotes &amp; Articles Menu (Module 3) -->
+    <menuitem id="menu_btp_quotes_articles"
+              name="Quotes &amp; Articles"
+              parent="menu_btp_prospecting_root"
+              sequence="30"/>
+
+    <menuitem id="menu_btp_quotes"
+              name="Quotes"
+              parent="menu_btp_quotes_articles"
+              action="action_btp_quotes"
+              sequence="10"/>
+
+    <menuitem id="menu_btp_articles"
+              name="Articles"
+              parent="menu_btp_quotes_articles"
+              sequence="20"/>
+
+    <menuitem id="menu_btp_article_families"
+              name="Article Families"
+              parent="menu_btp_articles"
+              action="action_btp_article_family"
+              sequence="10"/>
+
+    <menuitem id="menu_btp_articles_list"
+              name="All Articles"
+              parent="menu_btp_articles"
+              action="action_btp_articles"
+              sequence="20"/>
+
+    <menuitem id="menu_btp_suppliers"
+              name="Suppliers &amp; Subcontractors"
+              parent="menu_btp_quotes_articles"
+              sequence="30"/>
+
+    <menuitem id="menu_btp_suppliers_list"
+              name="Suppliers"
+              parent="menu_btp_suppliers"
+              action="action_btp_suppliers"
+              sequence="10"/>
+
+    <menuitem id="menu_btp_subcontractors_list"
+              name="Subcontractors"
+              parent="menu_btp_suppliers"
+              action="action_btp_subcontractors"
+              sequence="20"/>
+
+    <menuitem id="menu_btp_supplier_search"
+              name="Supplier Search"
+              parent="menu_btp_suppliers"
+              action="action_btp_supplier_search_wizard"
+              sequence="30"/>
+
+    <menuitem id="menu_btp_reports"
+              name="Reports"
+              parent="menu_btp_quotes_articles"
+              sequence="40"
+              groups="btp_prospecting.group_btp_manager"/>
+
+    <menuitem id="menu_btp_quote_followup"
+              name="Quote Follow-up"
+              parent="menu_btp_reports"
+              action="action_btp_quote_followup"
+              sequence="10"
+              groups="btp_prospecting.group_btp_manager"/>
+
+    <menuitem id="menu_btp_article_analysis"
+              name="Article Analysis"
+              parent="menu_btp_reports"
+              action="action_btp_article_analysis"
+              sequence="20"
+              groups="btp_prospecting.group_btp_manager"/>
+
+    <menuitem id="menu_btp_supplier_analysis"
+              name="Supplier Analysis"
+              parent="menu_btp_reports"
+              action="action_btp_supplier_analysis"
+              sequence="30"
+              groups="btp_prospecting.group_btp_manager"/>
+
+    <menuitem id="menu_btp_price_fluctuation"
+              name="Price Fluctuations"
+              parent="menu_btp_reports"
+              action="action_btp_price_fluctuation"
+              sequence="40"
+              groups="btp_prospecting.group_btp_manager"/>
+
 </odoo>
 

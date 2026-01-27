@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Extend res.partner form for suppliers/subcontractors -->
+    <record id="view_partner_form_btp_supplier" model="ir.ui.view">
+        <field name="name">res.partner.form.btp.supplier</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='category_id']" position="after">
+                <field name="is_supplier" widget="boolean_toggle"
+                       modifiers="{'invisible': [['is_company', '=', False]]}"/>
+                <field name="is_subcontractor" widget="boolean_toggle"
+                       modifiers="{'invisible': [['is_company', '=', False]]}"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="BTP Supplier/Subcontractor" name="btp_supplier_info"
+                      modifiers="{'invisible': ['|', ['is_company', '=', False], '|', ['is_supplier', '=', False], ['is_subcontractor', '=', False]]}">
+                    <group>
+                        <group string="Hierarchy">
+                            <field name="btp_group_id"
+                                   modifiers="{'invisible': [['is_supplier', '=', False], ['is_subcontractor', '=', False]]}"/>
+                            <field name="btp_subsidiary_id"
+                                   modifiers="{'invisible': [['is_supplier', '=', False], ['is_subcontractor', '=', False]]}"/>
+                            <field name="btp_agency_id"
+                                   modifiers="{'invisible': [['is_supplier', '=', False], ['is_subcontractor', '=', False]]}"/>
+                            <field name="btp_supplier_agency_ids" widget="many2many_tags"
+                                   modifiers="{'invisible': [['is_supplier', '=', False], ['is_subcontractor', '=', False]]}"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Regulatory Documents">
+                            <div class="alert alert-danger" role="alert"
+                                 modifiers="{'invisible': [['btp_expired_documents_count', '=', False]]}">
+                                <strong>Alert:</strong>
+                                <field name="btp_expired_documents_count"/> expired document(s)
+                            </div>
+                            <div class="alert alert-warning" role="alert"
+                                 modifiers="{'invisible': [['btp_expiring_soon_documents_count', '=', False]]}">
+                                <strong>Warning:</strong>
+                                <field name="btp_expiring_soon_documents_count"/> document(s) expiring soon
+                            </div>
+                            <field name="btp_supplier_document_ids" nolabel="1">
+                                <list string="Documents">
+                                    <field name="document_type"/>
+                                    <field name="name"/>
+                                    <field name="reference"/>
+                                    <field name="issue_date"/>
+                                    <field name="expiration_date"/>
+                                    <field name="is_expired" widget="boolean_toggle"/>
+                                    <field name="expires_soon" widget="boolean_toggle"/>
+                                    <field name="attachment_id" widget="many2one_button"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_btp_suppliers" model="ir.actions.act_window">
+        <field name="name">Suppliers</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form,kanban</field>
+        <field name="domain">[('is_company', '=', True), ('is_supplier', '=', True)]</field>
+        <field name="context">{'default_is_company': True, 'default_is_supplier': True, 'search_default_is_supplier': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first supplier!
+            </p>
+            <p>
+                Suppliers provide raw materials and supplies for your articles.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_btp_subcontractors" model="ir.actions.act_window">
+        <field name="name">Subcontractors</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form,kanban</field>
+        <field name="domain">[('is_company', '=', True), ('is_subcontractor', '=', True)]</field>
+        <field name="context">{'default_is_company': True, 'default_is_subcontractor': True, 'search_default_is_subcontractor': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first subcontractor!
+            </p>
+            <p>
+                Subcontractors provide labor services for your quotes.
+            </p>
+        </field>
+    </record>
+
+</odoo>
+

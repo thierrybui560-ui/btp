@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Extend sale.order form for BTP Quotes -->
+    <record id="view_sale_order_form_btp_quote" model="ir.ui.view">
+        <field name="name">sale.order.form.btp.quote</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="btp_quote_number" readonly="1"
+                       modifiers="{'invisible': [['btp_quote_number', '=', False]]}"/>
+                <field name="btp_revision_index" readonly="1"
+                       modifiers="{'invisible': [['btp_revision_index', '=', False]]}"/>
+            </xpath>
+            <xpath expr="//field[@name='state']" position="after">
+                <field name="btp_quote_status" widget="statusbar" statusbar_visible="draft,sent,accepted"/>
+            </xpath>
+            <xpath expr="//group[@name='order_details']/field[@name='validity_date']" position="after">
+                <field name="date_order" string="Quotation Date" readonly="state in ['cancel', 'sale']"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Quote Structure" name="btp_quote_structure">
+                    <div class="alert alert-info" role="alert" invisible="btp_lot_count">
+                        <strong>Info:</strong> Create lots to organize your quote hierarchically (Lot → Title → Subtitle → Item).
+                    </div>
+                    <field name="btp_lot_ids" nolabel="1">
+                        <list string="Lots">
+                            <field name="sequence" widget="handle"/>
+                            <field name="name" required="1"/>
+                            <field name="title_count"/>
+                        </list>
+                        <form string="Lot">
+                            <sheet>
+                                <group>
+                                    <group>
+                                        <field name="quote_id" invisible="1"/>
+                                        <field name="name"/>
+                                        <field name="sequence"/>
+                                    </group>
+                                </group>
+                                <notebook>
+                                    <page string="Titles">
+                                        <field name="title_ids" nolabel="1">
+                                            <list string="Titles">
+                                                <field name="sequence" widget="handle"/>
+                                                <field name="name" required="1"/>
+                                                <field name="subtitle_count"/>
+                                            </list>
+                                            <form string="Title">
+                                                <sheet>
+                                                    <group>
+                                                        <group>
+                                                            <field name="lot_id" invisible="1"/>
+                                                            <field name="name"/>
+                                                            <field name="sequence"/>
+                                                        </group>
+                                                    </group>
+                                                    <notebook>
+                                                        <page string="Subtitles">
+                                                            <field name="subtitle_ids" nolabel="1">
+                                                                <list string="Subtitles">
+                                                                    <field name="sequence" widget="handle"/>
+                                                                    <field name="name" required="1"/>
+                                                                    <field name="item_count"/>
+                                                                </list>
+                                                                <form string="Subtitle">
+                                                                    <sheet>
+                                                                        <group>
+                                                                            <group>
+                                                                                <field name="title_id" invisible="1"/>
+                                                                                <field name="name"/>
+                                                                                <field name="sequence"/>
+                                                                            </group>
+                                                                        </group>
+                                                                        <notebook>
+                                                                            <page string="Items">
+                                                                                <field name="item_ids" nolabel="1">
+                                                                                    <list string="Items">
+                                                                                        <field name="sequence" widget="handle"/>
+                                                                                        <field name="name" required="1"/>
+                                                                                        <field name="quantity"/>
+                                                                                        <field name="uom_id"/>
+                                                                                        <field name="unit_price"/>
+                                                                                        <field name="subtotal" sum="Total"/>
+                                                                                        <field name="total_cost"/>
+                                                                                        <field name="margin"/>
+                                                                                        <field name="margin_percent"/>
+                                                                                    </list>
+                                                                                    <form string="Item">
+                                                                                        <sheet>
+                                                                                            <group>
+                                                                                                <group>
+                                                                                                    <field name="subtitle_id" invisible="1"/>
+                                                                                                    <field name="name"/>
+                                                                                                    <field name="sequence"/>
+                                                                                                    <field name="description" widget="text"/>
+                                                                                                </group>
+                                                                                                <group string="Pricing">
+                                                                                                    <field name="quantity"/>
+                                                                                                    <field name="uom_id"/>
+                                                                                                    <field name="unit_price"/>
+                                                                                                    <field name="subtotal" readonly="1"/>
+                                                                                                    <field name="total_cost" readonly="1"/>
+                                                                                                    <field name="margin" readonly="1"/>
+                                                                                                    <field name="margin_percent" readonly="1"/>
+                                                                                                </group>
+                                                                                            </group>
+                                                                                            <notebook>
+                                                                                                <page string="Articles">
+                                                                                                    <field name="article_ids" nolabel="1">
+                                                                                                        <list string="Articles">
+                                                                                                            <field name="sequence" widget="handle"/>
+                                                                                                            <field name="article_id" required="1" options="{'no_create': True}"/>
+                                                                                                            <field name="quantity"/>
+                                                                                                            <field name="uom_id" readonly="1"/>
+                                                                                                            <field name="unit_cost" readonly="1"/>
+                                                                                                            <field name="total_cost" sum="Total"/>
+                                                                                                        </list>
+                                                                                                    </field>
+                                                                                                </page>
+                                                                                                <page string="Labor">
+                                                                                                    <field name="labor_ids" nolabel="1">
+                                                                                                        <list string="Labor">
+                                                                                                            <field name="sequence" widget="handle"/>
+                                                                                                            <field name="labor_type" required="1"/>
+                                                                                                            <field name="hourly_cost" modifiers="{'invisible': [['labor_type', '!=', 'internal']]}"/>
+                                                                                                            <field name="daily_cost" modifiers="{'invisible': [['labor_type', '!=', 'internal']]}"/>
+                                                                                                            <field name="yield_per_hour" modifiers="{'invisible': [['labor_type', '!=', 'internal']]}"/>
+                                                                                                            <field name="yield_per_day" modifiers="{'invisible': [['labor_type', '!=', 'internal']]}"/>
+                                                                                                            <field name="quantity" modifiers="{'invisible': [['labor_type', '!=', 'internal']]}"/>
+                                                                                                            <field name="subcontractor_id" modifiers="{'invisible': [['labor_type', '!=', 'subcontracting']]}"/>
+                                                                                                            <field name="subcontractor_unit_price" modifiers="{'invisible': [['labor_type', '!=', 'subcontracting']]}"/>
+                                                                                                            <field name="subcontractor_quantity" modifiers="{'invisible': [['labor_type', '!=', 'subcontracting']]}"/>
+                                                                                                            <field name="total_cost" sum="Total"/>
+                                                                                                        </list>
+                                                                                                    </field>
+                                                                                                </page>
+                                                                                            </notebook>
+                                                                                        </sheet>
+                                                                                    </form>
+                                                                                </field>
+                                                                            </page>
+                                                                        </notebook>
+                                                                    </sheet>
+                                                                </form>
+                                                            </field>
+                                                        </page>
+                                                    </notebook>
+                                                </sheet>
+                                            </form>
+                                        </field>
+                                    </page>
+                                </notebook>
+                            </sheet>
+                        </form>
+                    </field>
+                </page>
+            </xpath>
+            <xpath expr="//group[@name='sale_total']" position="after">
+                <group string="BTP Totals" modifiers="{'invisible': [['btp_lot_count', '=', 0]]}">
+                    <field name="btp_total_cost" readonly="1"/>
+                    <field name="btp_total_margin" readonly="1"/>
+                    <field name="btp_margin_percent" readonly="1"/>
+                </group>
+            </xpath>
+            <xpath expr="//header/button[@name='action_quotation_send']" position="after">
+                <button name="action_send_quote" type="object" string="Send Quote" 
+                        class="oe_highlight" modifiers="{'invisible': [['btp_quote_status', '!=', 'draft']]}"/>
+                <button name="action_create_revision" type="object" string="Create Revision" 
+                        modifiers="{'invisible': [['btp_is_locked', '=', False]]}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Quote Tree View -->
+    <record id="view_sale_order_tree_btp_quote" model="ir.ui.view">
+        <field name="name">sale.order.tree.btp.quote</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_quotation_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="btp_quote_number" optional="show"/>
+                <field name="btp_revision_index" optional="hide"/>
+                <field name="btp_quote_status" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_btp_quotes" model="ir.actions.act_window">
+        <field name="name">BTP Quotes</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">list,form,kanban</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first BTP quote!
+            </p>
+            <p>
+                Quotes are organized hierarchically: Lot → Title → Subtitle → Item.
+            </p>
+        </field>
+    </record>
+
+</odoo>

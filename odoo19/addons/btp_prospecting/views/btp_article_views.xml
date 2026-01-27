@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Actions -->
+    <record id="action_btp_article_family_subfamilies" model="ir.actions.act_window">
+        <field name="name">Subfamilies</field>
+        <field name="res_model">btp.article.subfamily</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('family_id', '=', active_id)]</field>
+        <field name="context">{'default_family_id': active_id}</field>
+    </record>
+
+    <!-- Article Family Views -->
+    <record id="view_btp_article_family_tree" model="ir.ui.view">
+        <field name="name">btp.article.family.tree</field>
+        <field name="model">btp.article.family</field>
+        <field name="arch" type="xml">
+            <list string="Article Families">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="subfamily_count"/>
+                <field name="article_count"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_btp_article_family_form" model="ir.ui.view">
+        <field name="name">btp.article.family.form</field>
+        <field name="model">btp.article.family</field>
+        <field name="arch" type="xml">
+            <form string="Article Family">
+                <header>
+                    <field name="active" widget="boolean_toggle"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="%(action_btp_article_family_subfamilies)d"
+                                type="action"
+                                class="oe_stat_button"
+                                icon="fa-list"
+                                context="{'default_family_id': id}">
+                            <field name="subfamily_count" widget="statinfo" string="Subfamilies"/>
+                        </button>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="sequence"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Subfamilies">
+                            <field name="subfamily_ids" nolabel="1">
+                                <list string="Subfamilies" editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="article_count"/>
+                                    <field name="active" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Description">
+                            <field name="description" placeholder="Description of the article family..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_btp_article_family_search" model="ir.ui.view">
+        <field name="name">btp.article.family.search</field>
+        <field name="model">btp.article.family</field>
+        <field name="arch" type="xml">
+            <search string="Article Families">
+                <field name="name"/>
+                <filter string="Active" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Article Subfamily Views -->
+    <record id="view_btp_article_subfamily_tree" model="ir.ui.view">
+        <field name="name">btp.article.subfamily.tree</field>
+        <field name="model">btp.article.subfamily</field>
+        <field name="arch" type="xml">
+            <list string="Article Subfamilies">
+                <field name="family_id"/>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="article_count"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_btp_article_subfamily_form" model="ir.ui.view">
+        <field name="name">btp.article.subfamily.form</field>
+        <field name="model">btp.article.subfamily</field>
+        <field name="arch" type="xml">
+            <form string="Article Subfamily">
+                <header>
+                    <field name="active" widget="boolean_toggle"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="family_id" options="{'no_create': True}"/>
+                            <field name="name"/>
+                            <field name="sequence"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Description">
+                            <field name="description" placeholder="Description of the article subfamily..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Product Template Extension (Articles) -->
+    <record id="view_product_template_form_btp_article" model="ir.ui.view">
+        <field name="name">product.template.form.btp.article</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='categ_id']" position="after">
+                <field name="is_btp_article" widget="boolean_toggle"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="BTP Article Information" name="btp_article_info"
+                      modifiers="{'invisible': [['is_btp_article', '=', False]]}">
+                    <group>
+                        <group string="Classification">
+                            <field name="btp_family_id" options="{'no_create': True}"/>
+                            <field name="btp_subfamily_id" options="{'no_create': True}"
+                                   modifiers="{'required': [['is_btp_article', '=', True]]}"/>
+                            <field name="btp_internal_reference"/>
+                            <field name="btp_designation" widget="text"/>
+                        </group>
+                        <group string="Pricing">
+                            <field name="uom_id"/>
+                            <field name="btp_average_cost_price" readonly="1"/>
+                            <field name="btp_catalog_price"/>
+                            <field name="btp_last_purchase_price" readonly="1"/>
+                            <field name="btp_last_purchase_date" readonly="1"/>
+                            <field name="btp_last_supplier_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Suppliers">
+                            <field name="btp_supplier_ids" nolabel="1" widget="many2many_tags" options="{'no_create': True}"/>
+                            <field name="btp_supplier_count" invisible="1"/>
+                        </page>
+                        <page string="Documents">
+                            <div class="alert alert-warning" role="alert"
+                                 invisible="not btp_expired_documents_count and not btp_expiring_soon_documents_count">
+                                <strong>Warning:</strong>
+                                <span invisible="not btp_expired_documents_count">
+                                    <field name="btp_expired_documents_count"/> expired document(s)
+                                </span>
+                                <span invisible="not btp_expiring_soon_documents_count">
+                                    <field name="btp_expiring_soon_documents_count"/> document(s) expiring soon
+                                </span>
+                            </div>
+                            <field name="btp_document_ids" nolabel="1">
+                                <list string="Documents">
+                                    <field name="document_type"/>
+                                    <field name="name"/>
+                                    <field name="reference"/>
+                                    <field name="issue_date"/>
+                                    <field name="expiration_date"/>
+                                    <field name="is_expired" widget="boolean_toggle"/>
+                                    <field name="expires_soon" widget="boolean_toggle"/>
+                                    <field name="attachment_id" widget="many2one_button"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Price History">
+                            <field name="btp_price_history_ids" nolabel="1">
+                                <list string="Price History">
+                                    <field name="supplier_id"/>
+                                    <field name="purchase_date"/>
+                                    <field name="purchase_price"/>
+                                    <field name="quantity"/>
+                                    <field name="uom_id"/>
+                                    <field name="currency_id"/>
+                                    <field name="purchase_order_id"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_product_template_tree_btp_article" model="ir.ui.view">
+        <field name="name">product.template.tree.btp.article</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='categ_id']" position="after">
+                <field name="is_btp_article" widget="boolean_toggle"/>
+                <field name="btp_family_id" optional="hide"/>
+                <field name="btp_subfamily_id" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Search View Extension -->
+    <record id="view_product_template_search_btp_article" model="ir.ui.view">
+        <field name="name">product.template.search.btp.article</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_search_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='filter_to_sell']" position="after">
+                <filter string="BTP Articles" name="is_btp_article" domain="[('is_btp_article', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_btp_article_family" model="ir.actions.act_window">
+        <field name="name">Article Families</field>
+        <field name="res_model">btp.article.family</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first article family!
+            </p>
+            <p>
+                Article families group articles by category (e.g., Flockings, Mortars).
+            </p>
+        </field>
+    </record>
+
+    <record id="action_btp_articles" model="ir.actions.act_window">
+        <field name="name">BTP Articles</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">list,form,kanban</field>
+        <field name="domain">[]</field>
+        <field name="context">{'default_is_btp_article': True, 'search_default_is_btp_article': 1, 'create': True}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first BTP article!
+            </p>
+            <p>
+                Articles are raw materials and supplies used in quotes.
+            </p>
+        </field>
+    </record>
+
+</odoo>
+

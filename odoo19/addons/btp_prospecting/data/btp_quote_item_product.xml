@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="product_btp_quote_item_service_template" model="product.template">
+            <field name="name">BTP Quote Item</field>
+            <field name="type">service</field>
+            <field name="sale_ok">True</field>
+            <field name="purchase_ok">False</field>
+            <field name="list_price">0.0</field>
+        </record>
+    </data>
+</odoo>
+

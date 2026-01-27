@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_btp_supplier_search_wizard_form" model="ir.ui.view">
+        <field name="name">btp.supplier.search.wizard.form</field>
+        <field name="model">btp.supplier.search.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Supplier/Subcontractor Search">
+                <group>
+                    <field name="search_type"/>
+                    <field name="siren"/>
+                    <field name="name"/>
+                </group>
+                <footer>
+                    <button name="action_search_and_create" type="object" string="Search &amp; Create"
+                            class="btn-primary"/>
+                    <button name="action_create_manual" type="object" string="Create Manually"
+                            class="btn-secondary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_btp_supplier_search_wizard" model="ir.actions.act_window">
+        <field name="name">Supplier Search</field>
+        <field name="res_model">btp.supplier.search.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>
+
