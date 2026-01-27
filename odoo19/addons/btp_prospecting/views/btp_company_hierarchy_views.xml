@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Company Group Views -->
+    <record id="view_btp_company_group_tree" model="ir.ui.view">
+        <field name="name">btp.company.group.tree</field>
+        <field name="model">btp.company.group</field>
+        <field name="arch" type="xml">
+            <list string="Company Groups" decoration-info="active == False">
+                <field name="name"/>
+                <field name="siren"/>
+                <field name="subsidiary_count" string="Subsidiaries"/>
+                <field name="company_count" string="Companies"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_btp_company_group_form" model="ir.ui.view">
+        <field name="name">btp.company.group.form</field>
+        <field name="model">btp.company.group</field>
+        <field name="arch" type="xml">
+            <form string="Company Group">
+                <header>
+                    <button name="toggle_active" type="object" string="Archive" 
+                            modifiers="{'invisible': [('active', '=', False)]}" class="oe_stat_button"/>
+                    <button name="toggle_active" type="object" string="Unarchive" 
+                            modifiers="{'invisible': [('active', '=', True)]}" class="oe_stat_button"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="siren"/>
+                        </group>
+                        <group>
+                            <field name="active" widget="boolean_toggle"/>
+                            <field name="subsidiary_count" widget="statinfo" string="Subsidiaries"/>
+                            <field name="company_count" widget="statinfo" string="Companies"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Subsidiaries">
+                            <field name="subsidiary_ids" nolabel="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="siren"/>
+                                    <field name="agency_count" string="Agencies"/>
+                                    <field name="company_count" string="Companies"/>
+                                    <field name="active" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Companies">
+                            <field name="company_ids" nolabel="1" domain="[('is_company', '=', True)]">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="siren"/>
+                                    <field name="siret"/>
+                                    <field name="btp_assigned_salesperson_id"/>
+                                    <field name="btp_is_client" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Company Subsidiary Views -->
+    <record id="view_btp_company_subsidiary_tree" model="ir.ui.view">
+        <field name="name">btp.company.subsidiary.tree</field>
+        <field name="model">btp.company.subsidiary</field>
+        <field name="arch" type="xml">
+            <list string="Company Subsidiaries" decoration-info="active == False">
+                <field name="name"/>
+                <field name="group_id"/>
+                <field name="siren"/>
+                <field name="agency_count" string="Agencies"/>
+                <field name="company_count" string="Companies"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_btp_company_subsidiary_form" model="ir.ui.view">
+        <field name="name">btp.company.subsidiary.form</field>
+        <field name="model">btp.company.subsidiary</field>
+        <field name="arch" type="xml">
+            <form string="Company Subsidiary">
+                <header>
+                    <button name="toggle_active" type="object" string="Archive" 
+                            modifiers="{'invisible': [('active', '=', False)]}" class="oe_stat_button"/>
+                    <button name="toggle_active" type="object" string="Unarchive" 
+                            modifiers="{'invisible': [('active', '=', True)]}" class="oe_stat_button"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="group_id"/>
+                            <field name="siren"/>
+                        </group>
+                        <group>
+                            <field name="active" widget="boolean_toggle"/>
+                            <field name="agency_count" widget="statinfo" string="Agencies"/>
+                            <field name="company_count" widget="statinfo" string="Companies"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Agencies">
+                            <field name="agency_ids" nolabel="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="siret"/>
+                                    <field name="company_count" string="Companies"/>
+                                    <field name="active" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Companies">
+                            <field name="company_ids" nolabel="1" domain="[('is_company', '=', True)]">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="siren"/>
+                                    <field name="siret"/>
+                                    <field name="btp_assigned_salesperson_id"/>
+                                    <field name="btp_is_client" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Company Agency Views -->
+    <record id="view_btp_company_agency_tree" model="ir.ui.view">
+        <field name="name">btp.company.agency.tree</field>
+        <field name="model">btp.company.agency</field>
+        <field name="arch" type="xml">
+            <list string="Company Agencies" decoration-info="active == False">
+                <field name="name"/>
+                <field name="group_id"/>
+                <field name="subsidiary_id"/>
+                <field name="siret"/>
+                <field name="company_count" string="Companies"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_btp_company_agency_form" model="ir.ui.view">
+        <field name="name">btp.company.agency.form</field>
+        <field name="model">btp.company.agency</field>
+        <field name="arch" type="xml">
+            <form string="Company Agency">
+                <header>
+                    <button name="toggle_active" type="object" string="Archive" 
+                            modifiers="{'invisible': [('active', '=', False)]}" class="oe_stat_button"/>
+                    <button name="toggle_active" type="object" string="Unarchive" 
+                            modifiers="{'invisible': [('active', '=', True)]}" class="oe_stat_button"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="group_id" readonly="1"/>
+                            <field name="subsidiary_id"/>
+                            <field name="siret"/>
+                        </group>
+                        <group>
+                            <field name="active" widget="boolean_toggle"/>
+                            <field name="company_count" widget="statinfo" string="Companies"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Companies">
+                            <field name="company_ids" nolabel="1" domain="[('is_company', '=', True)]">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="siren"/>
+                                    <field name="siret"/>
+                                    <field name="btp_assigned_salesperson_id"/>
+                                    <field name="btp_is_client" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_btp_company_group" model="ir.actions.act_window">
+        <field name="name">Company Groups</field>
+        <field name="res_model">btp.company.group</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Company Group
+            </p>
+            <p>
+                Company Groups represent the top level of the organizational hierarchy.
+                Examples: Bouygues Construction, Vinci, Eiffage.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_btp_company_subsidiary" model="ir.actions.act_window">
+        <field name="name">Company Subsidiaries</field>
+        <field name="res_model">btp.company.subsidiary</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Company Subsidiary
+            </p>
+            <p>
+                Subsidiaries belong to a Group and can have multiple Agencies.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_btp_company_agency" model="ir.actions.act_window">
+        <field name="name">Company Agencies</field>
+        <field name="res_model">btp.company.agency</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Company Agency
+            </p>
+            <p>
+                Agencies belong to a Subsidiary and are the most operational level.
+                Sites and businesses can be attached directly to Agencies.
+            </p>
+        </field>
+    </record>
+</odoo>
+

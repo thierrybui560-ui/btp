@@ -45,5 +45,62 @@
               sequence="20"
               groups="btp_prospecting.group_btp_manager"/>
 
+    <!-- Clients & Contacts Menu (Module 2) -->
+    <menuitem id="menu_btp_clients_contacts"
+              name="Clients &amp; Contacts"
+              parent="menu_btp_prospecting_root"
+              sequence="20"/>
+
+    <menuitem id="menu_btp_companies"
+              name="Companies"
+              parent="menu_btp_clients_contacts"
+              action="action_btp_companies"
+              sequence="10"/>
+
+    <menuitem id="menu_btp_contacts"
+              name="Contacts"
+              parent="menu_btp_clients_contacts"
+              action="action_btp_contacts"
+              sequence="20"/>
+
+    <menuitem id="menu_btp_company_search"
+              name="Company Search"
+              parent="menu_btp_clients_contacts"
+              action="action_btp_company_search_wizard"
+              sequence="30"/>
+
+    <menuitem id="menu_btp_company_sites"
+              name="Sites"
+              parent="menu_btp_clients_contacts"
+              action="action_btp_company_sites"
+              sequence="40"/>
+
+    <menuitem id="menu_btp_company_hierarchy"
+              name="Company Hierarchy"
+              parent="menu_btp_clients_contacts"
+              sequence="50"
+              groups="btp_prospecting.group_btp_manager"/>
+
+    <menuitem id="menu_btp_company_group"
+              name="Groups"
+              parent="menu_btp_company_hierarchy"
+              action="action_btp_company_group"
+              sequence="10"
+              groups="btp_prospecting.group_btp_manager"/>
+
+    <menuitem id="menu_btp_company_subsidiary"
+              name="Subsidiaries"
+              parent="menu_btp_company_hierarchy"
+              action="action_btp_company_subsidiary"
+              sequence="20"
+              groups="btp_prospecting.group_btp_manager"/>
+
+    <menuitem id="menu_btp_company_agency"
+              name="Agencies"
+              parent="menu_btp_company_hierarchy"
+              action="action_btp_company_agency"
+              sequence="30"
+              groups="btp_prospecting.group_btp_manager"/>
+
 </odoo>
 

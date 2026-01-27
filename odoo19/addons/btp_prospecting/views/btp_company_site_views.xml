@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_btp_company_site_tree" model="ir.ui.view">
+        <field name="name">btp.company.site.tree</field>
+        <field name="model">btp.company.site</field>
+        <field name="arch" type="xml">
+            <list string="Sites" decoration-info="active == False">
+                <field name="name"/>
+                <field name="company_id"/>
+                <field name="agency_id"/>
+                <field name="city"/>
+                <field name="country_id"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_btp_company_site_form" model="ir.ui.view">
+        <field name="name">btp.company.site.form</field>
+        <field name="model">btp.company.site</field>
+        <field name="arch" type="xml">
+            <form string="Site">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="company_id"/>
+                            <field name="agency_id"/>
+                            <field name="contact_ids" widget="many2many_tags"/>
+                        </group>
+                        <group>
+                            <field name="street"/>
+                            <field name="street2"/>
+                            <field name="city"/>
+                            <field name="zip"/>
+                            <field name="state_id"/>
+                            <field name="country_id"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="notes"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_btp_company_sites" model="ir.actions.act_window">
+        <field name="name">Sites</field>
+        <field name="res_model">btp.company.site</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>
+

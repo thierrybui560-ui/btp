@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_btp_company_search_wizard" model="ir.ui.view">
+        <field name="name">btp.company.search.wizard.form</field>
+        <field name="model">btp.company.search.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Search Company">
+                <group>
+                    <field name="query"/>
+                    <field name="siren"/>
+                </group>
+                <group>
+                    <field name="results" nolabel="1" readonly="1"/>
+                </group>
+                <footer>
+                    <button name="action_search" type="object" string="Search" class="btn-primary"/>
+                    <button string="Close" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_btp_company_search_wizard" model="ir.actions.act_window">
+        <field name="name">Company Search</field>
+        <field name="res_model">btp.company.search.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>
+

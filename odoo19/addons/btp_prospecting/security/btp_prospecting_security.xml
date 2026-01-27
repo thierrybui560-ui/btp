@@ -166,6 +166,135 @@
             ]</field>
             <field name="global" eval="True"/>
         </record>
+
+        <!-- Note: Access control for companies and contacts is handled at the application level -->
+        <!-- through domain filters in views and actions, not through record rules -->
+        <!-- This prevents conflicts with base Odoo partner access rules -->
+        
+        <!-- Partner Rules - Enforce shared visibility for salespeople -->
+        <!-- Read rule: Restrictive domain for visibility -->
+        <record id="btp_partner_rule_salesperson" model="ir.rule">
+            <field name="name">BTP Partner: Salesperson</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="domain_force">[
+                '|',
+                '|',
+                '|',
+                ('id', '=', user.partner_id.id),
+                ('id', 'in', user.company_ids.partner_id.ids),
+                ('user_ids', '!=', False),
+                '|',
+                '&amp;',
+                ('is_company', '=', True),
+                '|',
+                ('btp_assigned_salesperson_id', '=', user.id),
+                ('btp_shared_company_ids', 'in', [user.company_id.id]),
+                '&amp;',
+                ('is_company', '=', False),
+                ('btp_contact_assigned_salesperson_id', '=', user.id)
+            ]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('group_btp_salesperson'))]"/>
+        </record>
+        
+        <!-- Write rule: allow editing own or shared records and just-created records -->
+        <record id="btp_partner_rule_salesperson_write" model="ir.rule">
+            <field name="name">BTP Partner: Salesperson (Write)</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="domain_force">[
+                '|',
+                ('create_uid', '=', user.id),
+                '|',
+                '&amp;',
+                ('is_company', '=', True),
+                '|',
+                ('btp_assigned_salesperson_id', '=', user.id),
+                ('btp_shared_company_ids', 'in', [user.company_id.id]),
+                '&amp;',
+                ('is_company', '=', False),
+                ('btp_contact_assigned_salesperson_id', '=', user.id)
+            ]</field>
+            <field name="perm_read" eval="False"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('group_btp_salesperson'))]"/>
+        </record>
+
+        <!-- Create rule: Permissive domain to allow creation -->
+        <record id="btp_partner_rule_salesperson_create" model="ir.rule">
+            <field name="name">BTP Partner: Salesperson (Create)</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="False"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('group_btp_salesperson'))]"/>
+        </record>
+
+        <record id="btp_partner_rule_non_sales" model="ir.rule">
+            <field name="name">BTP Partner: Non-Sales</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('group_btp_non_sales'))]"/>
+        </record>
+
+        <record id="btp_partner_rule_manager" model="ir.rule">
+            <field name="name">BTP Partner: Manager</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+            <field name="groups" eval="[(4, ref('group_btp_manager'))]"/>
+        </record>
+
+        <record id="btp_partner_rule_admin" model="ir.rule">
+            <field name="name">BTP Partner: Admin</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+            <field name="groups" eval="[(4, ref('group_btp_admin'))]"/>
+        </record>
+
+        <!-- Career History Rules -->
+        <!-- Salesperson: Can create/read/write career for assigned contacts -->
+        <record id="btp_career_rule_salesperson" model="ir.rule">
+            <field name="name">BTP Career: Salesperson</field>
+            <field name="model_id" ref="model_btp_contact_career"/>
+            <field name="domain_force">[
+                ('contact_id.btp_contact_assigned_salesperson_id', '=', user.id)
+            ]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+            <field name="groups" eval="[(4, ref('group_btp_salesperson'))]"/>
+        </record>
+
+        <!-- Manager: Full access to career history -->
+        <record id="btp_career_rule_manager" model="ir.rule">
+            <field name="name">BTP Career: Manager</field>
+            <field name="model_id" ref="model_btp_contact_career"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+            <field name="groups" eval="[(4, ref('group_btp_manager'))]"/>
+        </record>
     </data>
 </odoo>
 

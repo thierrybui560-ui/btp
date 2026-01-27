@@ -3,15 +3,15 @@
     'name': 'BTP Prospecting & Lead Management',
     'version': '19.0.1.0.0',
     'category': 'Sales/CRM',
-    'summary': 'Comprehensive lead management system for Building and Public Works industry',
+    'summary': 'Comprehensive lead management and client/contact management system for Building and Public Works industry',
     'description': """
-BTP Prospecting & Lead Management
-==================================
-This module provides a complete lead management solution specifically designed
-for the Building and Public Works (BTP) industry.
+BTP Prospecting & Lead Management + Clients & Contacts Management
+===================================================================
+This module provides a complete lead management and client/contact management solution 
+specifically designed for the Building and Public Works (BTP) industry.
 
-Key Features:
--------------
+Module 1 - Lead Management:
+----------------------------
 * Multi-channel lead capture (mobile, web, import, AI)
 * Pyramidal attribution and visibility control
 * Qualification workflow (Field → Targeting → Contact → Decision)
@@ -21,6 +21,17 @@ Key Features:
 * Site-centric lead management
 * KPI dashboards and reporting
 * Integration with messaging, calls, and tasks
+
+Module 2 - Clients & Contacts Management:
+-----------------------------------------
+* Company hierarchy management (Group → Subsidiary → Agency)
+* Unique client base with SIREN/SIRET validation
+* Contact career history tracking across companies
+* Anti-duplicate controls (companies and contacts)
+* External API integration (INSEE/Pappers/Infogreffe) for company enrichment
+* Pyramidal access rights and attribution logic
+* Multi-company client sharing with distinct commercial conditions
+* Reports and KPIs (active clients, coverage rate, career history)
     """,
     'author': 'BTP Solutions',
     'website': 'https://www.example.com',
@@ -33,6 +44,9 @@ Key Features:
         'sale',
         'project',
     ],
+    'external_dependencies': {
+        'python': ['requests'],
+    },
     'data': [
         'security/btp_prospecting_security.xml',
         'security/ir.model.access.csv',
@@ -44,6 +58,10 @@ Key Features:
         'views/btp_lead_stage_views.xml',
         'views/btp_lead_assignment_rule_views.xml',
         'views/res_users_views.xml',
+        'views/btp_company_hierarchy_views.xml',
+        'views/res_partner_views.xml',
+        'views/btp_company_search_views.xml',
+        'views/btp_company_site_views.xml',
         'views/btp_prospecting_menus.xml',
         'reports/btp_lead_reports.xml',
         'reports/btp_lead_templates.xml',
