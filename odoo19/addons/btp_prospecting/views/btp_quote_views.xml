@@ -11,6 +11,8 @@
                        modifiers="{'invisible': [['btp_quote_number', '=', False]]}"/>
                 <field name="btp_revision_index" readonly="1"
                        modifiers="{'invisible': [['btp_revision_index', '=', False]]}"/>
+                <field name="btp_site_id"
+                       modifiers="{'invisible': [['btp_site_id', '=', False]]}"/>
             </xpath>
             <xpath expr="//field[@name='state']" position="after">
                 <field name="btp_quote_status" widget="statusbar" statusbar_visible="draft,sent,accepted"/>

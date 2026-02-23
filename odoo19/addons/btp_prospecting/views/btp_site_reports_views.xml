@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_btp_site_document_pivot" model="ir.ui.view">
+        <field name="name">btp.site.document.pivot</field>
+        <field name="model">btp.site.document</field>
+        <field name="arch" type="xml">
+            <pivot string="Site Documents Analysis">
+                <field name="site_id" type="row"/>
+                <field name="category" type="col"/>
+                <field name="document_type" type="col"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_btp_site_document_analysis" model="ir.actions.act_window">
+        <field name="name">Site Documents Analysis</field>
+        <field name="res_model">btp.site.document</field>
+        <field name="view_mode">pivot,list</field>
+        <field name="view_id" ref="view_btp_site_document_pivot"/>
+        <field name="search_view_id" ref="view_btp_site_document_search"/>
+    </record>
+</odoo>

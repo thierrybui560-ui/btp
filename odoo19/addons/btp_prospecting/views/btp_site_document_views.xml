@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_btp_site_document_tree" model="ir.ui.view">
+        <field name="name">btp.site.document.tree</field>
+        <field name="model">btp.site.document</field>
+        <field name="arch" type="xml">
+            <list string="Site Documents">
+                <field name="site_id"/>
+                <field name="category"/>
+                <field name="document_type"/>
+                <field name="name"/>
+                <field name="version_label"/>
+                <field name="issue_date"/>
+                <field name="expiration_date"/>
+                <field name="is_expired" widget="boolean_toggle"/>
+                <field name="expires_soon" widget="boolean_toggle"/>
+                <field name="supplier_id"/>
+                <field name="subcontractor_id"/>
+                <field name="quote_item_id"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_btp_site_document_form" model="ir.ui.view">
+        <field name="name">btp.site.document.form</field>
+        <field name="model">btp.site.document</field>
+        <field name="arch" type="xml">
+            <form string="Site Document">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="site_id"/>
+                            <field name="category"/>
+                            <field name="document_type"/>
+                            <field name="name"/>
+                            <field name="version" readonly="1"/>
+                            <field name="version_label" readonly="1"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="issue_date"/>
+                            <field name="expiration_date"/>
+                            <field name="is_expired" readonly="1"/>
+                            <field name="expires_soon" readonly="1"/>
+                            <field name="attachment_id" widget="many2one_button"/>
+                        </group>
+                    </group>
+                    <group string="Links">
+                        <field name="supplier_id"/>
+                        <field name="subcontractor_id"/>
+                        <field name="quote_id"/>
+                        <field name="quote_item_id"/>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_btp_site_document_search" model="ir.ui.view">
+        <field name="name">btp.site.document.search</field>
+        <field name="model">btp.site.document</field>
+        <field name="arch" type="xml">
+            <search string="Search Documents">
+                <field name="site_id"/>
+                <field name="category"/>
+                <field name="document_type"/>
+                <field name="name"/>
+                <filter string="Contracts" name="category_contract" domain="[('category', '=', 'contract')]"/>
+                <filter string="Expired" name="expired" domain="[('is_expired', '=', True)]"/>
+                <filter string="Expiring Soon" name="expiring" domain="[('expires_soon', '=', True)]"/>
+                <filter string="Active" name="active" domain="[('active', '=', True)]"/>
+                <separator/>
+                <group>
+                    <filter string="Site" name="group_site" context="{'group_by': 'site_id'}"/>
+                    <filter string="Category" name="group_category" context="{'group_by': 'category'}"/>
+                    <filter string="Type" name="group_type" context="{'group_by': 'document_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_btp_site_documents" model="ir.actions.act_window">
+        <field name="name">Site Documents</field>
+        <field name="res_model">btp.site.document</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_btp_site_document_tree"/>
+        <field name="search_view_id" ref="view_btp_site_document_search"/>
+        <field name="context">{}</field>
+    </record>
+</odoo>

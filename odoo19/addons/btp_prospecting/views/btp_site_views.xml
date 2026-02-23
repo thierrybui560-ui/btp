@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_btp_site_tree" model="ir.ui.view">
+        <field name="name">btp.site.tree</field>
+        <field name="model">project.project</field>
+        <field name="arch" type="xml">
+            <list string="Sites">
+                <field name="btp_site_code"/>
+                <field name="name"/>
+                <field name="partner_id" string="Client"/>
+                <field name="user_id" string="Site Manager" widget="many2one_avatar_user"/>
+                <field name="btp_start_date"/>
+                <field name="btp_end_date_planned"/>
+                <field name="btp_is_blocked"/>
+                <field name="btp_missing_document_count"/>
+                <field name="btp_expired_document_count"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_btp_site_form" model="ir.ui.view">
+        <field name="name">btp.site.form</field>
+        <field name="model">project.project</field>
+        <field name="arch" type="xml">
+            <form string="BTP Site">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="object" name="action_view_tasks" icon="fa-tasks">
+                            <field string="Tasks" name="task_count" widget="statinfo"/>
+                        </button>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="btp_site_code" readonly="1"/>
+                            <field name="name"/>
+                            <field name="partner_id" string="Client"/>
+                            <field name="user_id" string="Site Manager"/>
+                            <field name="btp_sale_order_id"/>
+                        </group>
+                        <group>
+                            <field name="btp_start_date"/>
+                            <field name="btp_end_date_planned"/>
+                            <field name="btp_end_date_actual"/>
+                            <field name="btp_is_blocked" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Location">
+                        <group>
+                            <field name="btp_site_address"/>
+                            <field name="btp_site_city"/>
+                            <field name="btp_site_zip"/>
+                            <field name="btp_site_country_id"/>
+                        </group>
+                        <group>
+                            <field name="btp_site_latitude"/>
+                            <field name="btp_site_longitude"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Stakeholders">
+                            <group>
+                                <field name="btp_client_contact_ids" widget="many2many_tags"/>
+                                <field name="btp_subcontractor_ids" widget="many2many_tags"/>
+                                <field name="btp_supplier_ids" widget="many2many_tags"/>
+                                <field name="btp_employee_ids" widget="many2many_tags"/>
+                            </group>
+                        </page>
+                        <page string="Documents">
+                            <field name="btp_document_ids" nolabel="1" context="{'default_site_id': id}">
+                                <list>
+                                    <field name="category"/>
+                                    <field name="document_type"/>
+                                    <field name="name"/>
+                                    <field name="version_label"/>
+                                    <field name="issue_date"/>
+                                    <field name="expiration_date"/>
+                                    <field name="is_expired" widget="boolean_toggle"/>
+                                    <field name="expires_soon" widget="boolean_toggle"/>
+                                    <field name="supplier_id"/>
+                                    <field name="subcontractor_id"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Checklist">
+                            <field name="btp_document_requirement_ids" nolabel="1" context="{'default_site_id': id}">
+                                <list editable="bottom">
+                                    <field name="category"/>
+                                    <field name="document_type"/>
+                                    <field name="is_mandatory"/>
+                                    <field name="required_before_start"/>
+                                    <field name="missing" widget="boolean_toggle"/>
+                                    <field name="expired" widget="boolean_toggle"/>
+                                    <field name="fulfilled" widget="boolean_toggle"/>
+                                    <field name="last_document_id"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Contracts">
+                            <field name="btp_document_ids" nolabel="1"
+                                   domain="[('category', '=', 'contract')]"
+                                   context="{'default_site_id': id, 'default_category': 'contract'}">
+                                <list>
+                                    <field name="document_type"/>
+                                    <field name="name"/>
+                                    <field name="version_label"/>
+                                    <field name="issue_date"/>
+                                    <field name="expiration_date"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Technical Documents">
+                            <field name="btp_document_ids" nolabel="1"
+                                   domain="[('category', '=', 'technical')]"
+                                   context="{'default_site_id': id, 'default_category': 'technical'}">
+                                <list>
+                                    <field name="document_type"/>
+                                    <field name="name"/>
+                                    <field name="version_label"/>
+                                    <field name="issue_date"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Safety">
+                            <field name="btp_document_ids" nolabel="1"
+                                   domain="[('category', '=', 'regulatory')]"
+                                   context="{'default_site_id': id, 'default_category': 'regulatory'}">
+                                <list>
+                                    <field name="document_type"/>
+                                    <field name="name"/>
+                                    <field name="version_label"/>
+                                    <field name="issue_date"/>
+                                    <field name="expiration_date"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Supplier/Subcontractor">
+                            <field name="btp_document_ids" nolabel="1"
+                                   domain="[('category', '=', 'supplier')]"
+                                   context="{'default_site_id': id, 'default_category': 'supplier'}">
+                                <list>
+                                    <field name="document_type"/>
+                                    <field name="name"/>
+                                    <field name="supplier_id"/>
+                                    <field name="subcontractor_id"/>
+                                    <field name="issue_date"/>
+                                    <field name="expiration_date"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Miscellaneous">
+                            <field name="btp_document_ids" nolabel="1"
+                                   domain="[('category', '=', 'misc')]"
+                                   context="{'default_site_id': id, 'default_category': 'misc'}">
+                                <list>
+                                    <field name="document_type"/>
+                                    <field name="name"/>
+                                    <field name="issue_date"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_btp_site_search" model="ir.ui.view">
+        <field name="name">btp.site.search</field>
+        <field name="model">project.project</field>
+        <field name="arch" type="xml">
+            <search string="Search Sites">
+                <field name="btp_site_code"/>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <filter string="Blocked" name="blocked" domain="[('btp_is_blocked', '=', True)]"/>
+                <filter string="Missing Documents" name="missing_docs" domain="[('btp_missing_document_count', '>', 0)]"/>
+                <filter string="Expired Documents" name="expired_docs" domain="[('btp_expired_document_count', '>', 0)]"/>
+                <filter string="Delayed" name="delayed"
+                        domain="[('btp_end_date_planned', '!=', False), ('btp_end_date_planned', '&lt;', context_today()), ('btp_end_date_actual', '=', False)]"/>
+                <separator/>
+                <group>
+                    <filter string="Client" name="group_client" context="{'group_by': 'partner_id'}"/>
+                    <filter string="Manager" name="group_manager" context="{'group_by': 'user_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_btp_sites" model="ir.actions.act_window">
+        <field name="name">Sites</field>
+        <field name="res_model">project.project</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_btp_site_tree"/>
+        <field name="search_view_id" ref="view_btp_site_search"/>
+        <field name="context">{'default_allow_billable': 0}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first site
+            </p>
+            <p>
+                Sites are created automatically from accepted quotes, or can be created manually.
+            </p>
+        </field>
+    </record>
+</odoo>

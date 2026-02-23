@@ -104,6 +104,12 @@ class ResPartner(models.Model):
         'company_id',
         string='Sites'
     )
+    btp_subcontractor_site_ids = fields.One2many(
+        'btp.company.site',
+        'subcontractor_id',
+        string='Subcontractor Sites',
+        help='Sites where this partner is linked as subcontractor'
+    )
     btp_commercial_condition_ids = fields.One2many(
         'btp.company.commercial.condition',
         'partner_id',
@@ -228,6 +234,24 @@ class ResPartner(models.Model):
         compute='_compute_supplier_document_count',
         store=True
     )
+    btp_conformity_status = fields.Selection(
+        [
+            ('conform', 'Conform'),
+            ('warning', 'Warning'),
+            ('expired', 'Expired'),
+            ('n_a', 'N/A'),
+        ],
+        string='Conformity Status',
+        compute='_compute_btp_conformity_status',
+        store=True,
+        help='Document conformity status for suppliers/subcontractors (based on expired/expiring documents)'
+    )
+    btp_conformity_rate = fields.Float(
+        string='Conformity Rate (%)',
+        compute='_compute_btp_conformity_rate',
+        store=True,
+        help='Percentage of supplier/subcontractor documents that are conform (not expired or expiring soon)'
+    )
 
     
     @api.depends('btp_career_history_ids', 'btp_career_history_ids.is_current', 'btp_career_history_ids.company_id', 'btp_career_history_ids.end_date', 'parent_id')
@@ -277,6 +301,28 @@ class ResPartner(models.Model):
             record.btp_supplier_document_count = len(record.btp_supplier_document_ids)
             record.btp_expired_documents_count = len(record.btp_supplier_document_ids.filtered('is_expired'))
             record.btp_expiring_soon_documents_count = len(record.btp_supplier_document_ids.filtered('expires_soon'))
+
+    @api.depends('btp_supplier_document_ids', 'btp_supplier_document_ids.is_expired', 'btp_supplier_document_ids.expires_soon')
+    def _compute_btp_conformity_status(self):
+        for partner in self:
+            if not (partner.is_supplier or partner.is_subcontractor) or not partner.btp_supplier_document_ids:
+                partner.btp_conformity_status = 'n_a'
+            elif partner.btp_expired_documents_count and partner.btp_expired_documents_count > 0:
+                partner.btp_conformity_status = 'expired'
+            elif partner.btp_expiring_soon_documents_count and partner.btp_expiring_soon_documents_count > 0:
+                partner.btp_conformity_status = 'warning'
+            else:
+                partner.btp_conformity_status = 'conform'
+
+    @api.depends('btp_supplier_document_ids', 'btp_supplier_document_ids.is_expired', 'btp_supplier_document_ids.expires_soon')
+    def _compute_btp_conformity_rate(self):
+        for partner in self:
+            total = len(partner.btp_supplier_document_ids)
+            if not (partner.is_supplier or partner.is_subcontractor) or total == 0:
+                partner.btp_conformity_rate = 0.0
+            else:
+                conform = total - len(partner.btp_supplier_document_ids.filtered(lambda d: d.is_expired or d.expires_soon))
+                partner.btp_conformity_rate = round(100.0 * conform / total, 2) if total else 0.0
 
     @api.onchange('name', 'email', 'phone', 'mobile')
     def _onchange_contact_duplicate_warning(self):

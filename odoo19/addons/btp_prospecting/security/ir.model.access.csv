@@ -64,6 +64,12 @@ access_btp_article_price_stats_admin,btp.article.price.stats.admin,model_btp_art
 access_btp_supplier_document_salesperson,btp.supplier.document.salesperson,model_btp_supplier_document,group_btp_salesperson,1,1,1,0
 access_btp_supplier_document_manager,btp.supplier.document.manager,model_btp_supplier_document,group_btp_manager,1,1,1,1
 access_btp_supplier_document_admin,btp.supplier.document.admin,model_btp_supplier_document,group_btp_admin,1,1,1,1
+access_btp_site_document_salesperson,btp.site.document.salesperson,model_btp_site_document,group_btp_salesperson,1,1,1,0
+access_btp_site_document_manager,btp.site.document.manager,model_btp_site_document,group_btp_manager,1,1,1,1
+access_btp_site_document_admin,btp.site.document.admin,model_btp_site_document,group_btp_admin,1,1,1,1
+access_btp_site_document_requirement_salesperson,btp.site.document.requirement.salesperson,model_btp_site_document_requirement,group_btp_salesperson,1,0,0,0
+access_btp_site_document_requirement_manager,btp.site.document.requirement.manager,model_btp_site_document_requirement,group_btp_manager,1,1,1,1
+access_btp_site_document_requirement_admin,btp.site.document.requirement.admin,model_btp_site_document_requirement,group_btp_admin,1,1,1,1
 access_btp_supplier_search_wizard_salesperson,btp.supplier.search.wizard.salesperson,model_btp_supplier_search_wizard,group_btp_salesperson,1,1,1,0
 access_btp_supplier_search_wizard_manager,btp.supplier.search.wizard.manager,model_btp_supplier_search_wizard,group_btp_manager,1,1,1,0
 access_btp_supplier_search_wizard_admin,btp.supplier.search.wizard.admin,model_btp_supplier_search_wizard,group_btp_admin,1,1,1,1

@@ -188,5 +188,29 @@
               sequence="40"
               groups="btp_prospecting.group_btp_manager"/>
 
+    <!-- Sites & Documents Menu (Module 5) -->
+    <menuitem id="menu_btp_sites_documents"
+              name="Sites &amp; Documents"
+              parent="menu_btp_prospecting_root"
+              sequence="40"/>
+
+    <menuitem id="menu_btp_sites"
+              name="Sites"
+              parent="menu_btp_sites_documents"
+              action="action_btp_sites"
+              sequence="10"/>
+
+    <menuitem id="menu_btp_site_documents"
+              name="Site Documents"
+              parent="menu_btp_sites_documents"
+              action="action_btp_site_documents"
+              sequence="20"/>
+
+    <menuitem id="menu_btp_site_reports"
+              name="Site Reports"
+              parent="menu_btp_sites_documents"
+              action="action_btp_site_document_analysis"
+              sequence="30"/>
+
 </odoo>
 

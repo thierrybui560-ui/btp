@@ -83,8 +83,8 @@ if [ $? -eq 0 ]; then
     echo ""
     echo "✓ Database initialized successfully!"
     echo ""
-    echo "You can now start Odoo with: ./start_odoo.sh"
-    echo "Then access it at: http://localhost:8069"
+    echo "You can now start Odoo with: sudo systemctl start odoo-btp"
+    echo "Then access it at: http://localhost:8069 (or your VPS host:8069)"
 else
     echo ""
     echo "✗ Database initialization failed"

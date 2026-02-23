@@ -20,6 +20,13 @@ class BtpCompanySite(models.Model):
         required=True,
         domain="[('is_company', '=', True)]"
     )
+    subcontractor_id = fields.Many2one(
+        'res.partner',
+        string='Subcontractor',
+        ondelete='set null',
+        domain="[('is_company', '=', True), ('is_subcontractor', '=', True)]",
+        help='Subcontractor linked to this site (optional)'
+    )
     contact_ids = fields.Many2many(
         'res.partner',
         'btp_site_contact_rel',

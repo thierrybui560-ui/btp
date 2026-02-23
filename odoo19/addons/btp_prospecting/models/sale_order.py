@@ -123,6 +123,12 @@ class SaleOrder(models.Model):
         store=True,
         help='Quote has been converted to a sale order'
     )
+    btp_site_id = fields.Many2one(
+        'project.project',
+        string='Site',
+        copy=False,
+        help='Site created from this accepted quote/order'
+    )
 
     @api.depends('btp_lot_ids')
     def _compute_lot_count(self):
@@ -197,6 +203,46 @@ class SaleOrder(models.Model):
             if not order.btp_quote_number:
                 order.btp_quote_number = order._generate_quote_number(order.date_order)
         return orders
+
+    def action_confirm(self):
+        result = super().action_confirm()
+        for order in self:
+            order._btp_ensure_site()
+        return result
+
+    def _btp_ensure_site(self):
+        for order in self:
+            if order.btp_site_id:
+                continue
+            vals = order._btp_prepare_site_vals()
+            site = self.env['project.project'].create(vals)
+            order.btp_site_id = site.id
+
+    def _btp_prepare_site_vals(self):
+        self.ensure_one()
+        partner = self.partner_shipping_id or self.partner_id
+        end_planned = self.commitment_date.date() if self.commitment_date else False
+        if not end_planned and self.validity_date:
+            end_planned = self.validity_date
+        name_parts = [self.partner_id.name or _('Client')]
+        if self.btp_quote_number:
+            name_parts.append(self.btp_quote_number)
+        else:
+            name_parts.append(self.name)
+        return {
+            'name': ' - '.join(name_parts),
+            'partner_id': self.partner_id.id,
+            'user_id': self.user_id.id,
+            'btp_site_address': partner.street or '',
+            'btp_site_city': partner.city or '',
+            'btp_site_zip': partner.zip or '',
+            'btp_site_country_id': partner.country_id.id if partner.country_id else False,
+            'btp_site_latitude': partner.partner_latitude or 0.0,
+            'btp_site_longitude': partner.partner_longitude or 0.0,
+            'btp_start_date': fields.Date.today(),
+            'btp_end_date_planned': end_planned,
+            'btp_sale_order_id': self.id,
+        }
 
     def write(self, vals):
         """Override write to handle quote locking and revisions"""

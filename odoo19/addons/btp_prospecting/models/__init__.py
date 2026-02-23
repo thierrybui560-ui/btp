@@ -9,6 +9,9 @@ from . import btp_contact_career
 from . import btp_company_api
 from . import btp_company_address
 from . import btp_company_site
+from . import btp_site
+from . import btp_site_document
+from . import btp_site_document_requirement
 from . import btp_company_commercial_condition
 from . import btp_company_reattribution
 # Module 3 - Quotes & Articles
@@ -22,4 +25,5 @@ from . import btp_quote_lot
 from . import btp_quote_item
 from . import sale_order
 from . import sale_order_line
+from . import res_config_settings
 

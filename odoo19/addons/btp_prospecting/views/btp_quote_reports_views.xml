@@ -27,7 +27,7 @@
             <pivot string="Quote Follow-up">
                 <field name="btp_quote_status" type="col"/>
                 <field name="user_id" type="row"/>
-                <field name="id" type="measure"/>
+                <field name="id" type="measure" operator="count" string="Quotes"/>
             </pivot>
         </field>
     </record>
@@ -38,7 +38,7 @@
         <field name="arch" type="xml">
             <graph string="Quote Follow-up" type="bar">
                 <field name="btp_quote_status" type="row"/>
-                <field name="id" type="measure"/>
+                <field name="id" type="measure" operator="count" string="Quotes"/>
             </graph>
         </field>
     </record>
