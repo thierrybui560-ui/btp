@@ -212,5 +212,28 @@
               action="action_btp_site_document_analysis"
               sequence="30"/>
 
+    <!-- Planning &amp; Yield (Module 6) -->
+    <menuitem id="menu_btp_planning_yield"
+              name="Planning &amp; Yield"
+              parent="menu_btp_sites_documents"
+              sequence="35"/>
+
+    <menuitem id="menu_btp_yield_entries"
+              name="Yield Entries"
+              parent="menu_btp_planning_yield"
+              action="action_btp_site_performance"
+              sequence="10"/>
+
+    <menuitem id="menu_btp_pointing"
+              name="Pointing"
+              parent="menu_btp_planning_yield"
+              action="action_btp_site_pointing"
+              sequence="20"/>
+
+    <menuitem id="menu_btp_consumptions"
+              name="Consumptions"
+              parent="menu_btp_planning_yield"
+              action="action_btp_site_consumption"
+              sequence="30"/>
 </odoo>
 

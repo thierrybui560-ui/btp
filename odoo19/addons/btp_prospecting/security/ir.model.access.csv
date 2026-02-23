@@ -91,4 +91,13 @@ access_btp_quote_item_article_admin,btp.quote.item.article.admin,model_btp_quote
 access_btp_quote_item_labor_salesperson,btp.quote.item.labor.salesperson,model_btp_quote_item_labor,group_btp_salesperson,1,1,1,0
 access_btp_quote_item_labor_manager,btp.quote.item.labor.manager,model_btp_quote_item_labor,group_btp_manager,1,1,1,1
 access_btp_quote_item_labor_admin,btp.quote.item.labor.admin,model_btp_quote_item_labor,group_btp_admin,1,1,1,1
+access_btp_site_performance_salesperson,btp.site.performance.salesperson,model_btp_site_performance,group_btp_salesperson,1,1,1,0
+access_btp_site_performance_manager,btp.site.performance.manager,model_btp_site_performance,group_btp_manager,1,1,1,1
+access_btp_site_performance_admin,btp.site.performance.admin,model_btp_site_performance,group_btp_admin,1,1,1,1
+access_btp_site_pointing_salesperson,btp.site.pointing.salesperson,model_btp_site_pointing,group_btp_salesperson,1,1,1,0
+access_btp_site_pointing_manager,btp.site.pointing.manager,model_btp_site_pointing,group_btp_manager,1,1,1,1
+access_btp_site_pointing_admin,btp.site.pointing.admin,model_btp_site_pointing,group_btp_admin,1,1,1,1
+access_btp_site_consumption_salesperson,btp.site.consumption.salesperson,model_btp_site_consumption,group_btp_salesperson,1,1,1,0
+access_btp_site_consumption_manager,btp.site.consumption.manager,model_btp_site_consumption,group_btp_manager,1,1,1,1
+access_btp_site_consumption_admin,btp.site.consumption.admin,model_btp_site_consumption,group_btp_admin,1,1,1,1
 

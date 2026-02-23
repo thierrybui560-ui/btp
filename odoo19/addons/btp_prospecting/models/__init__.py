@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from . import ir_ui_view
 from . import btp_lead
 from . import btp_lead_stage
 from . import res_users
@@ -12,6 +13,10 @@ from . import btp_company_site
 from . import btp_site
 from . import btp_site_document
 from . import btp_site_document_requirement
+from . import btp_planning_task
+from . import btp_site_performance
+from . import btp_site_pointing
+from . import btp_site_consumption
 from . import btp_company_commercial_condition
 from . import btp_company_reattribution
 # Module 3 - Quotes & Articles

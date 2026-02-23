@@ -85,6 +85,7 @@ Module 3 - Quotes & Articles:
         'views/btp_company_site_views.xml',
         'views/btp_article_views.xml',
         'views/btp_site_views.xml',
+        'views/btp_planning_views.xml',
         'views/btp_site_document_views.xml',
         'views/btp_site_reports_views.xml',
         'views/btp_quote_views.xml',

@@ -36,8 +36,11 @@ ENV/
 Thumbs.db
 
 # Odoo specific
+data/
 odoo19/venv/
 odoo19/odoo/
+odoo19/logs/
+odoo19/logs/odoo.log
 odoo19/addons/*/__pycache__/
 odoo19/addons/*/static/description/*.png
 odoo19/addons/*/static/description/*.jpg
