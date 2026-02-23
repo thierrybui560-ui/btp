@@ -235,5 +235,12 @@
               parent="menu_btp_planning_yield"
               action="action_btp_site_consumption"
               sequence="30"/>
+
+    <!-- Invoicing and Situations (Module 7) -->
+    <menuitem id="menu_btp_situations"
+              name="Situations"
+              parent="menu_btp_sites_documents"
+              action="action_btp_situation"
+              sequence="25"/>
 </odoo>
 

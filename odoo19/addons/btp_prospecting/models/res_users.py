@@ -83,3 +83,9 @@ class ResUsers(models.Model):
         
         return domain
 
+    # Disable onboarding/tours so "Stop Tour" persists and the tour icon does not keep appearing
+    @api.depends("create_date")
+    def _compute_tour_enabled(self):
+        for user in self:
+            user.tour_enabled = False
+

@@ -72,6 +72,108 @@
                 </div>
             </field>
         </record>
+
+        <!-- BTP Invoice Reminders (Module 7) -->
+        <record id="email_template_btp_invoice_reminder_courtesy" model="mail.template">
+            <field name="name">BTP Invoice: Courtesy Reminder (D-7)</field>
+            <field name="model_id" ref="account.model_account_move"/>
+            <field name="subject">Payment reminder – Invoice {{ object.name or object.btp_invoice_sequence or '' }} (due {{ object.invoice_date_due }})</field>
+            <field name="email_from">{{ object.company_id.email or user.email_formatted }}</field>
+            <field name="email_to">{{ object.partner_id.email_formatted }}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p>Dear <t t-esc="object.partner_id.name"/>,</p>
+                    <p>This is a courtesy reminder that the following invoice is due in 7 days:</p>
+                    <ul>
+                        <li><strong>Invoice:</strong> <t t-esc="object.name or object.btp_invoice_sequence or 'N/A'"/></li>
+                        <li><strong>Due date:</strong> <t t-esc="object.invoice_date_due"/></li>
+                        <li><strong>Amount:</strong> <t t-esc="object.amount_total"/> <t t-esc="object.currency_id.symbol"/></li>
+                    </ul>
+                    <p>Please ensure payment is made by the due date.</p>
+                    <p>Best regards,<br/><t t-esc="object.company_id.name"/></p>
+                </div>
+            </field>
+        </record>
+        <record id="email_template_btp_invoice_reminder_official" model="mail.template">
+            <field name="name">BTP Invoice: Official Reminder (D0)</field>
+            <field name="model_id" ref="account.model_account_move"/>
+            <field name="subject">Payment due – Invoice {{ object.name or object.btp_invoice_sequence or '' }}</field>
+            <field name="email_from">{{ object.company_id.email or user.email_formatted }}</field>
+            <field name="email_to">{{ object.partner_id.email_formatted }}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p>Dear <t t-esc="object.partner_id.name"/>,</p>
+                    <p>This is an official reminder that the following invoice is due for payment:</p>
+                    <ul>
+                        <li><strong>Invoice:</strong> <t t-esc="object.name or object.btp_invoice_sequence or 'N/A'"/></li>
+                        <li><strong>Due date:</strong> <t t-esc="object.invoice_date_due"/></li>
+                        <li><strong>Amount:</strong> <t t-esc="object.amount_total"/> <t t-esc="object.currency_id.symbol"/></li>
+                    </ul>
+                    <p>Please arrange payment as soon as possible.</p>
+                    <p>Best regards,<br/><t t-esc="object.company_id.name"/></p>
+                </div>
+            </field>
+        </record>
+        <record id="email_template_btp_invoice_reminder_1st" model="mail.template">
+            <field name="name">BTP Invoice: 1st Reminder (D+15)</field>
+            <field name="model_id" ref="account.model_account_move"/>
+            <field name="subject">1st payment reminder – Invoice {{ object.name or object.btp_invoice_sequence or '' }}</field>
+            <field name="email_from">{{ object.company_id.email or user.email_formatted }}</field>
+            <field name="email_to">{{ object.partner_id.email_formatted }}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p>Dear <t t-esc="object.partner_id.name"/>,</p>
+                    <p>The following invoice is now overdue. Please settle it at your earliest convenience:</p>
+                    <ul>
+                        <li><strong>Invoice:</strong> <t t-esc="object.name or object.btp_invoice_sequence or 'N/A'"/></li>
+                        <li><strong>Due date:</strong> <t t-esc="object.invoice_date_due"/></li>
+                        <li><strong>Amount:</strong> <t t-esc="object.amount_total"/> <t t-esc="object.currency_id.symbol"/></li>
+                    </ul>
+                    <p>Best regards,<br/><t t-esc="object.company_id.name"/></p>
+                </div>
+            </field>
+        </record>
+        <record id="email_template_btp_invoice_reminder_2nd" model="mail.template">
+            <field name="name">BTP Invoice: 2nd Reminder (D+30)</field>
+            <field name="model_id" ref="account.model_account_move"/>
+            <field name="subject">2nd payment reminder – Invoice {{ object.name or object.btp_invoice_sequence or '' }}</field>
+            <field name="email_from">{{ object.company_id.email or user.email_formatted }}</field>
+            <field name="email_to">{{ object.partner_id.email_formatted }}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p>Dear <t t-esc="object.partner_id.name"/>,</p>
+                    <p><strong>Reinforced reminder:</strong> The following invoice remains unpaid. Please proceed to payment without delay:</p>
+                    <ul>
+                        <li><strong>Invoice:</strong> <t t-esc="object.name or object.btp_invoice_sequence or 'N/A'"/></li>
+                        <li><strong>Due date:</strong> <t t-esc="object.invoice_date_due"/></li>
+                        <li><strong>Amount:</strong> <t t-esc="object.amount_total"/> <t t-esc="object.currency_id.symbol"/></li>
+                    </ul>
+                    <p>Failure to pay may result in a formal notice and further steps.</p>
+                    <p>Best regards,<br/><t t-esc="object.company_id.name"/></p>
+                </div>
+            </field>
+        </record>
+        <record id="email_template_btp_invoice_reminder_formal" model="mail.template">
+            <field name="name">BTP Invoice: Formal Notice (D+30)</field>
+            <field name="model_id" ref="account.model_account_move"/>
+            <field name="subject">Formal notice – Unpaid invoice {{ object.name or object.btp_invoice_sequence or '' }}</field>
+            <field name="email_from">{{ object.company_id.email or user.email_formatted }}</field>
+            <field name="email_to">{{ object.partner_id.email_formatted }}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p>Dear <t t-esc="object.partner_id.name"/>,</p>
+                    <p><strong>FORMAL NOTICE</strong></p>
+                    <p>Despite previous reminders, the following invoice remains unpaid:</p>
+                    <ul>
+                        <li><strong>Invoice:</strong> <t t-esc="object.name or object.btp_invoice_sequence or 'N/A'"/></li>
+                        <li><strong>Due date:</strong> <t t-esc="object.invoice_date_due"/></li>
+                        <li><strong>Amount:</strong> <t t-esc="object.amount_total"/> <t t-esc="object.currency_id.symbol"/></li>
+                    </ul>
+                    <p>You are hereby formally notified to settle this amount within the legal timeframe. Failure to do so may lead to recovery procedures.</p>
+                    <p>Best regards,<br/><t t-esc="object.company_id.name"/></p>
+                </div>
+            </field>
+        </record>
     </data>
 </odoo>
 

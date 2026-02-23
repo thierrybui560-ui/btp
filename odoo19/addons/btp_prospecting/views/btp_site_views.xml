@@ -30,6 +30,9 @@
                         <button class="oe_stat_button" type="object" name="action_view_tasks" icon="fa-tasks">
                             <field string="Tasks" name="task_count" widget="statinfo"/>
                         </button>
+                        <button class="oe_stat_button" type="object" name="action_btp_view_invoices" icon="fa-file-text-o" invisible="btp_invoice_count == 0">
+                            <field string="Invoices" name="btp_invoice_count" widget="statinfo"/>
+                        </button>
                     </div>
                     <group>
                         <group>
@@ -44,6 +47,8 @@
                             <field name="btp_end_date_planned"/>
                             <field name="btp_end_date_actual"/>
                             <field name="btp_is_blocked" readonly="1"/>
+                            <field name="btp_retention_rate"/>
+                            <field name="btp_retention_release_date"/>
                         </group>
                     </group>
                     <group string="Location">
@@ -66,6 +71,30 @@
                                 <field name="btp_supplier_ids" widget="many2many_tags"/>
                                 <field name="btp_employee_ids" widget="many2many_tags"/>
                             </group>
+                        </page>
+                        <page string="Situations &amp; Invoicing" name="btp_situations">
+                            <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                                <button name="action_btp_new_situation" type="object" string="Create situation"
+                                        class="oe_highlight btn-primary"
+                                        invisible="btp_sale_order_id == False"/>
+                                <button name="action_btp_create_deposit_invoice" type="object" string="Create deposit invoice"
+                                        invisible="btp_sale_order_id == False or not partner_id"/>
+                                <button name="action_btp_create_final_invoice" type="object" string="Create final invoice"
+                                        invisible="btp_sale_order_id == False or not partner_id or btp_has_final_invoice"/>
+                                <field name="btp_has_final_invoice" invisible="1"/>
+                            </div>
+                            <field name="btp_situation_ids" nolabel="1" context="{'default_site_id': id}" mode="list">
+                                <list create="0" delete="1" edit="1">
+                                    <field name="situation_date" string="Date"/>
+                                    <field name="state" string="Status"/>
+                                    <field name="amount_total" string="Progress"/>
+                                    <field name="amount_retention" string="Retention"/>
+                                    <field name="amount_to_invoice" string="To invoice"/>
+                                    <field name="invoice_id" string="Invoice"/>
+                                    <button name="action_create_invoice" type="object" string="Create Invoice" class="btn-link"
+                                            invisible="state != 'confirmed' or invoice_id" icon="fa-file-text-o"/>
+                                </list>
+                            </field>
                         </page>
                         <page string="Planning" name="btp_planning">
                             <group>

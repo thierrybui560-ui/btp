@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_btp_situation_list" model="ir.ui.view">
+        <field name="name">btp.situation.list</field>
+        <field name="model">btp.situation</field>
+        <field name="arch" type="xml">
+            <list string="Situations" create="1" delete="1" edit="1">
+                <field name="site_id"/>
+                <field name="situation_date"/>
+                <field name="state"/>
+                <field name="amount_total"/>
+                <field name="amount_retention"/>
+                <field name="amount_to_invoice"/>
+                <field name="invoice_id"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_btp_situation_form" model="ir.ui.view">
+        <field name="name">btp.situation.form</field>
+        <field name="model">btp.situation</field>
+        <field name="arch" type="xml">
+            <form string="Situation">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="site_id"/>
+                            <field name="situation_date"/>
+                            <field name="state"/>
+                            <field name="invoice_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="amount_total"/>
+                            <field name="amount_retention"/>
+                            <field name="amount_to_invoice"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Lines" name="lines">
+                            <field name="line_ids" nolabel="1">
+                                <list create="1" delete="1" edit="1">
+                                    <field name="quote_item_id"/>
+                                    <field name="sequence" column_invisible="1"/>
+                                    <field name="total_amount"/>
+                                    <field name="cumul_m_prev"/>
+                                    <field name="cumul_m"/>
+                                    <field name="month_progress"/>
+                                    <field name="balance_to_invoice"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <footer>
+                    <button name="action_confirm" string="Confirm" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_create_invoice" string="Create Invoice" type="object" class="btn-primary" invisible="state != 'confirmed' or invoice_id"/>
+                    <button name="action_set_draft" string="Reset to Draft" type="object" invisible="state != 'confirmed' or invoice_id"/>
+                    <button name="action_view_invoice" string="View Invoice" type="object" class="btn-secondary" invisible="not invoice_id"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="view_btp_situation_search" model="ir.ui.view">
+        <field name="name">btp.situation.search</field>
+        <field name="model">btp.situation</field>
+        <field name="arch" type="xml">
+            <search string="Situations">
+                <field name="site_id"/>
+                <field name="situation_date"/>
+                <field name="state"/>
+                <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Confirmed" name="confirmed" domain="[('state', '=', 'confirmed')]"/>
+                <filter string="Invoiced" name="invoiced" domain="[('state', '=', 'invoiced')]"/>
+                <separator string="Group By"/>
+                <group>
+                    <filter string="Site" name="group_site" context="{'group_by': 'site_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_btp_situation" model="ir.actions.act_window">
+        <field name="name">Situations</field>
+        <field name="res_model">btp.situation</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_btp_situation_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create a monthly situation from a site (Sites, open site, Situations tab, Create situation).</p>
+        </field>
+    </record>
+</odoo>

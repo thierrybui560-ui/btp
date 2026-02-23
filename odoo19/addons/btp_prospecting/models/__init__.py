@@ -31,4 +31,8 @@ from . import btp_quote_item
 from . import sale_order
 from . import sale_order_line
 from . import res_config_settings
+# Module 7 - Invoicing & Situations
+from . import account_move
+from . import btp_situation
+from . import btp_situation_line
 

@@ -100,4 +100,13 @@ access_btp_site_pointing_admin,btp.site.pointing.admin,model_btp_site_pointing,g
 access_btp_site_consumption_salesperson,btp.site.consumption.salesperson,model_btp_site_consumption,group_btp_salesperson,1,1,1,0
 access_btp_site_consumption_manager,btp.site.consumption.manager,model_btp_site_consumption,group_btp_manager,1,1,1,1
 access_btp_site_consumption_admin,btp.site.consumption.admin,model_btp_site_consumption,group_btp_admin,1,1,1,1
+access_btp_situation_salesperson,btp.situation.salesperson,model_btp_situation,group_btp_salesperson,1,1,1,0
+access_btp_situation_manager,btp.situation.manager,model_btp_situation,group_btp_manager,1,1,1,1
+access_btp_situation_admin,btp.situation.admin,model_btp_situation,group_btp_admin,1,1,1,1
+access_btp_situation_line_salesperson,btp.situation.line.salesperson,model_btp_situation_line,group_btp_salesperson,1,1,1,0
+access_btp_situation_line_manager,btp.situation.line.manager,model_btp_situation_line,group_btp_manager,1,1,1,1
+access_btp_situation_line_admin,btp.situation.line.admin,model_btp_situation_line,group_btp_admin,1,1,1,1
+access_btp_deposit_invoice_wizard_salesperson,btp.deposit.invoice.wizard.salesperson,model_btp_deposit_invoice_wizard,group_btp_salesperson,1,1,1,1
+access_btp_deposit_invoice_wizard_manager,btp.deposit.invoice.wizard.manager,model_btp_deposit_invoice_wizard,group_btp_manager,1,1,1,1
+access_btp_deposit_invoice_wizard_admin,btp.deposit.invoice.wizard.admin,model_btp_deposit_invoice_wizard,group_btp_admin,1,1,1,1
 

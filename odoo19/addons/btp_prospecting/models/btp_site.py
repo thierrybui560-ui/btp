@@ -108,6 +108,54 @@ class ProjectProject(models.Model):
         store=False,
         help='Number of tasks linked to quote items (from Generate planning).'
     )
+    # Module 7 - Invoicing & Situations
+    btp_retention_rate = fields.Float(
+        string='Retention Rate %',
+        digits=(5, 2),
+        default=5.0,
+        help='Retention of guarantee rate applied to situations/invoices (default 5%).'
+    )
+    btp_retention_release_date = fields.Date(
+        string='Retention Release Date',
+        help='Planned release of retained amounts (e.g. 12 months after site reception).'
+    )
+    btp_situation_ids = fields.One2many(
+        'btp.situation',
+        'site_id',
+        string='Situations',
+        copy=False,
+    )
+    btp_invoice_ids = fields.One2many(
+        'account.move',
+        'btp_site_id',
+        string='Invoices',
+        copy=False,
+        domain=[('move_type', '=', 'out_invoice')],
+    )
+    btp_invoice_count = fields.Integer(
+        string='Invoices',
+        compute='_compute_btp_invoice_count',
+        store=False,
+    )
+    btp_has_final_invoice = fields.Boolean(
+        string='Has Final Invoice',
+        compute='_compute_btp_has_final_invoice',
+        store=False,
+    )
+
+    @api.depends('btp_invoice_ids', 'btp_invoice_ids.btp_invoice_type', 'btp_invoice_ids.state')
+    def _compute_btp_has_final_invoice(self):
+        for site in self:
+            site.btp_has_final_invoice = bool(
+                site.btp_invoice_ids.filtered(
+                    lambda m: m.btp_invoice_type == 'final' and m.state != 'cancel'
+                )
+            )
+
+    @api.depends('btp_invoice_ids')
+    def _compute_btp_invoice_count(self):
+        for site in self:
+            site.btp_invoice_count = len(site.btp_invoice_ids)
 
     @api.depends('task_ids', 'task_ids.btp_quote_item_id')
     def _compute_btp_planning_task_count(self):
@@ -154,6 +202,189 @@ class ProjectProject(models.Model):
             'view_mode': 'list,form,calendar',
             'domain': [('project_id', '=', self.id)],
             'context': {'default_project_id': self.id},
+        }
+
+    def action_btp_new_situation(self):
+        """Create a new monthly situation (draft) with lines from the site's quote."""
+        self.ensure_one()
+        if not self.btp_sale_order_id:
+            raise UserError(_('Link a Source Quote/Order to the site first.'))
+        order = self.btp_sale_order_id
+        items = self.env['btp.quote.item']
+        for lot in order.btp_lot_ids:
+            for title in lot.title_ids:
+                for subtitle in title.subtitle_ids:
+                    items |= subtitle.item_ids
+        if not items:
+            raise UserError(_('The source quote has no items.'))
+        # Default situation date = last day of current month
+        today = fields.Date.today()
+        from dateutil.relativedelta import relativedelta
+        end_of_month = today + relativedelta(day=31)
+        situation_date = end_of_month
+        # Check not already existing
+        existing = self.env['btp.situation'].search([
+            ('site_id', '=', self.id),
+            ('situation_date', '=', situation_date),
+        ], limit=1)
+        if existing:
+            return {
+                'type': 'ir.actions.act_window',
+                'res_model': 'btp.situation',
+                'res_id': existing.id,
+                'view_mode': 'form',
+            }
+        line_vals = []
+        for seq, item in enumerate(items.sorted(
+            lambda i: (i.lot_id.sequence, i.title_id.sequence, i.subtitle_id.sequence, i.sequence)
+        ), 1):
+            total = item.subtotal or 0.0
+            line_vals.append((0, 0, {
+                'quote_item_id': item.id,
+                'sequence': seq * 10,
+                'total_amount': total,
+                'cumul_m_prev': 0.0,
+                'cumul_m': 0.0,
+            }))
+        situation = self.env['btp.situation'].create({
+            'site_id': self.id,
+            'situation_date': situation_date,
+            'line_ids': line_vals,
+        })
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'btp.situation',
+            'res_id': situation.id,
+            'view_mode': 'form',
+        }
+
+    def action_btp_view_invoices(self):
+        """Open BTP invoices for this site."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.move',
+            'name': _('Site Invoices'),
+            'view_mode': 'list,form',
+            'domain': [('btp_site_id', '=', self.id), ('move_type', '=', 'out_invoice')],
+            'context': {'default_btp_site_id': self.id, 'default_move_type': 'out_invoice'},
+        }
+
+    def action_btp_create_deposit_invoice(self):
+        """Open wizard to create a deposit invoice for this site."""
+        self.ensure_one()
+        if not self.partner_id:
+            raise UserError(_('Site must have a client (Partner) set.'))
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Create Deposit Invoice'),
+            'res_model': 'btp.deposit.invoice.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'active_model': 'project.project', 'active_id': self.id},
+        }
+
+    def action_btp_create_final_invoice(self):
+        """Create a single final invoice from the site's quote (one-shot invoicing)."""
+        self.ensure_one()
+        if not self.partner_id:
+            raise UserError(_('Site must have a client (Partner) set.'))
+        order = self.btp_sale_order_id
+        if not order:
+            raise UserError(_('Site must have a linked Sale Order for final invoicing.'))
+        existing = self.env['account.move'].search([
+            ('btp_site_id', '=', self.id),
+            ('btp_invoice_type', '=', 'final'),
+            ('state', '!=', 'cancel'),
+        ], limit=1)
+        if existing:
+            raise UserError(_('A final invoice already exists for this site: %s.') % existing.name)
+
+        company = self.company_id or self.env.company
+        journal = self.env['account.journal'].search([
+            ('company_id', '=', company.id),
+            ('type', '=', 'sale'),
+        ], limit=1)
+        if not journal:
+            raise UserError(_('No sales journal found for the company. Create a journal of type "Sales" in Accounting → Configuration → Journals for company "%s".') % (company.name or _('current')))
+        btp_sequence = self.env['ir.sequence'].next_by_code(
+            'btp.invoice',
+            sequence_date=fields.Date.today(),
+        )
+        if not btp_sequence:
+            raise UserError(_('BTP invoice sequence is not configured.'))
+
+        product = self.env.ref(
+            'btp_prospecting.product_btp_quote_item_service_template',
+            raise_if_not_found=False,
+        )
+        product_id = product.product_variant_id if product else False
+        account = False
+        if product_id and product_id.property_account_income_id:
+            account = product_id.property_account_income_id
+        if not account:
+            account = self.env['account.account'].search([
+                ('company_ids', 'in', [company.id]),
+                ('account_type', 'in', ('income', 'income_other')),
+            ], limit=1)
+        if not account:
+            raise UserError(_(
+                'No income account found for invoice lines. For company "%s", set an Income account on the BTP service product (Accounting tab) or ensure the Chart of Accounts has an account of type Income.'
+            ) % (company.name or _('current')))
+
+        items = self.env['btp.quote.item']
+        for lot in order.btp_lot_ids:
+            for title in lot.title_ids:
+                for subtitle in title.subtitle_ids:
+                    items |= subtitle.item_ids
+        line_vals = []
+        for item in items.sorted(
+            lambda i: (i.lot_id.sequence, i.title_id.sequence, i.subtitle_id.sequence, i.sequence)
+        ):
+            amount = item.subtotal or 0.0
+            if amount <= 0:
+                continue
+            line_vals.append((0, 0, {
+                'name': item.name or _('Quote item'),
+                'quantity': 1.0,
+                'price_unit': amount,
+                'account_id': account.id,
+                'product_id': product_id.id if product_id else False,
+            }))
+        if not line_vals:
+            raise UserError(_('The source quote has no positive amounts to invoice.'))
+
+        retention_rate = self.btp_retention_rate or 0.0
+        total_before_retention = sum(item.subtotal or 0.0 for item in items)
+        retention_amount = total_before_retention * (retention_rate / 100.0)
+        if retention_amount > 0:
+            line_vals.append((0, 0, {
+                'name': _('Retention of guarantee (%s%%)') % retention_rate,
+                'quantity': 1.0,
+                'price_unit': -retention_amount,
+                'account_id': account.id,
+                'product_id': product_id.id if product_id else False,
+            }))
+
+        move = self.env['account.move'].create({
+            'move_type': 'out_invoice',
+            'partner_id': self.partner_id.id,
+            'invoice_date': fields.Date.today(),
+            'ref': _('Final invoice - %s') % (self.name or self.btp_site_code or ''),
+            'btp_invoice_type': 'final',
+            'btp_invoice_sequence': btp_sequence,
+            'btp_site_id': self.id,
+            'btp_retention_rate': retention_rate,
+            'btp_retention_amount': retention_amount,
+            'journal_id': journal.id,
+            'invoice_line_ids': line_vals,
+        })
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.move',
+            'res_id': move.id,
+            'view_mode': 'form',
+            'context': {'default_move_type': 'out_invoice'},
         }
 
     @api.depends(

@@ -45,6 +45,13 @@ Module 3 - Quotes & Articles:
 * Quote workflow (creation, control, sending, follow-up)
 * Labor calculation (internal yield or subcontracting)
 * Quote-to-order conversion tracking
+
+Module 7 - Invoicing & Situations:
+----------------------------------
+* Monthly progress situations (item-by-item: cumul M, M-1, month progress, balance)
+* Deposit and final invoicing; retention of guarantee (default 5%, configurable per site)
+* Invoice numbering YYYYMMNNN + alphabetical revision index
+* Payment/reminder follow-up (D-7, D0, D+15, D+30, formal notice)
     """,
     'author': 'BTP Solutions',
     'website': 'https://www.example.com',
@@ -57,6 +64,8 @@ Module 3 - Quotes & Articles:
         'sale',
         'project',
         'purchase',
+        'account',
+        'web_tour',
     ],
     'external_dependencies': {
         'python': ['requests'],
@@ -72,6 +81,8 @@ Module 3 - Quotes & Articles:
         'data/btp_quote_item_product.xml',
         'data/btp_quote_followup_cron.xml',
         'data/btp_site_document_cron.xml',
+        'data/btp_invoice_sequence.xml',
+        'data/btp_invoice_reminder_cron.xml',
         'data/btp_email_templates.xml',
         'views/btp_lead_wizard_views.xml',
         'views/btp_lead_views.xml',
@@ -92,6 +103,9 @@ Module 3 - Quotes & Articles:
         'views/btp_quote_reports_views.xml',
         'views/btp_supplier_search_views.xml',
         'views/res_config_settings_views.xml',
+        'views/btp_situation_views.xml',
+        'views/btp_deposit_invoice_wizard_views.xml',
+        'views/btp_invoice_views.xml',
         'views/btp_prospecting_menus.xml',
         'reports/btp_lead_reports.xml',
         'reports/btp_lead_templates.xml',
