@@ -82,6 +82,20 @@ class AccountMove(models.Model):
         help='Amount deducted from deposit on this situation invoice (stored for tracking).',
     )
 
+    @api.model
+    def default_get(self, fields_list):
+        """Ensure New from Client/Supplier Outstanding opens the correct form and has a due date
+        so Confirm does not raise 'Any journal item on a payable account must have a due date'."""
+        res = super().default_get(fields_list)
+        move_type = res.get('move_type') or self.env.context.get('default_move_type')
+        if move_type in ('in_invoice', 'in_refund', 'out_invoice', 'out_refund', 'out_receipt', 'in_receipt'):
+            if not res.get('move_type'):
+                res['move_type'] = move_type
+            # Always default due date for invoices/bills so payable/receivable lines get date_maturity (form may not request invoice_date_due in fields_list)
+            if move_type in ('in_invoice', 'out_invoice', 'in_refund', 'out_refund') and not res.get('invoice_date_due'):
+                res['invoice_date_due'] = fields.Date.context_today(self)
+        return res
+
     def _btp_get_next_revision_letter(self):
         """Return the next revision letter (A, B, C…) for the same BTP number.
         Used when creating a revision so the user never picks the same letter.
@@ -126,12 +140,13 @@ class AccountMove(models.Model):
             'target': 'current',
         }
 
-    @api.depends('payment_state', 'invoice_date_due')
+    @api.depends('payment_state', 'invoice_date_due', 'move_type')
     def _compute_btp_invoice_status(self):
-        """Helper: paid / pending / late for display."""
+        """Helper: paid / pending / late for display. Empty for non-customer invoices."""
         today = fields.Date.context_today(self)
         for move in self:
             if move.move_type not in ('out_invoice', 'out_refund'):
+                move.btp_invoice_status_display = False
                 continue
             if move.payment_state == 'paid':
                 move.btp_invoice_status_display = 'paid'
@@ -145,6 +160,14 @@ class AccountMove(models.Model):
         compute='_compute_btp_invoice_status',
         help='paid / pending / late for BTP follow-up',
     )
+
+    def _get_valid_journal_types(self):
+        """When opening New from Supplier Outstanding, context has default_move_type='in_invoice'
+        but the record may not have move_type set yet; request purchase journal instead of general."""
+        move_type = self.move_type or self.env.context.get('default_move_type')
+        if move_type in ('in_invoice', 'in_refund'):
+            return ['purchase']
+        return super()._get_valid_journal_types()
 
     def _btp_remaining_deposit_for_site(self, site):
         """Total posted deposit amount for site minus already deducted on situation invoices."""

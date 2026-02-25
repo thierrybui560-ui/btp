@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_btp_bank_statement_import_wizard_form" model="ir.ui.view">
+        <field name="name">btp.bank.statement.import.wizard.form</field>
+        <field name="model">btp.bank.statement.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Import Bank Statement (CSV)">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="journal_id"/>
+                            <field name="filename" invisible="1"/>
+                            <field name="data_file" filename="filename"/>
+                            <field name="date_format" placeholder="e.g. %Y-%m-%d or %d/%m/%Y"/>
+                        </group>
+                        <group>
+                            <p class="text-muted">
+                                CSV should have a header row with columns for <b>date</b>, <b>amount</b> (or debit/credit), and optionally <b>label</b> (or reference, payment_ref).
+                            </p>
+                            <p class="text-muted">
+                                Amount: one column "amount" (positive = credit, negative = debit), or separate "debit" and "credit" columns.
+                            </p>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_import" string="Import" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_btp_bank_statement_import_wizard" model="ir.actions.act_window">
+        <field name="name">Import Bank Statement (CSV)</field>
+        <field name="res_model">btp.bank.statement.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="account.model_account_bank_statement"/>
+        <field name="binding_view_types">list</field>
+    </record>
+</odoo>

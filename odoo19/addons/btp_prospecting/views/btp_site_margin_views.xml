@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Module 8: Margin by site (forecast vs actual, net margin) -->
+    <record id="view_btp_site_margin_list" model="ir.ui.view">
+        <field name="name">project.project.btp.margin.list</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="btp_prospecting.view_btp_site_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='btp_end_date_planned']" position="after">
+                <field name="btp_quote_total" optional="hide" sum="Total Quote"/>
+                <field name="btp_invoiced_total" optional="hide" sum="Total Invoiced"/>
+                <field name="btp_actual_costs" optional="hide" sum="Total Costs"/>
+                <field name="btp_net_margin" optional="hide" sum="Net Margin"/>
+                <field name="btp_margin_percent" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="action_btp_site_margin" model="ir.actions.act_window">
+        <field name="name">Margin by Site</field>
+        <field name="res_model">project.project</field>
+        <field name="view_mode">list</field>
+        <field name="search_view_id" ref="btp_prospecting.view_btp_site_search"/>
+        <field name="help" type="html">
+            <p>Compare quote total (forecast), invoiced total, actual costs (from consumptions), and net margin by site. Use optional columns to show financial fields.</p>
+        </field>
+    </record>
+</odoo>

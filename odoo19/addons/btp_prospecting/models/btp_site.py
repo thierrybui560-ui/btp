@@ -132,6 +132,12 @@ class ProjectProject(models.Model):
         copy=False,
         domain=[('move_type', '=', 'out_invoice')],
     )
+    btp_consumption_ids = fields.One2many(
+        'btp.site.consumption',
+        'site_id',
+        string='Consumptions',
+        help='Article consumptions on site (for actual costs in margin).',
+    )
     btp_invoice_count = fields.Integer(
         string='Invoices',
         compute='_compute_btp_invoice_count',
@@ -142,6 +148,73 @@ class ProjectProject(models.Model):
         compute='_compute_btp_has_final_invoice',
         store=False,
     )
+    # Module 8 — Payments & Finances: analytical margin by site
+    btp_quote_total = fields.Float(
+        string='Quote Total (Forecast)',
+        digits='Product Price',
+        compute='_compute_btp_margin_fields',
+        store=True,
+        help='Total HT from source quote (forecast revenue).',
+    )
+    btp_invoiced_total = fields.Float(
+        string='Invoiced Total',
+        digits='Product Price',
+        compute='_compute_btp_margin_fields',
+        store=True,
+        help='Sum of posted customer invoices for this site.',
+    )
+    btp_actual_costs = fields.Float(
+        string='Actual Costs',
+        digits='Product Price',
+        compute='_compute_btp_margin_fields',
+        store=True,
+        help='Costs from consumptions (actual qty × product cost) and pointing (labor/subcontracting).',
+    )
+    btp_net_margin = fields.Float(
+        string='Net Margin',
+        digits='Product Price',
+        compute='_compute_btp_margin_fields',
+        store=True,
+        help='Invoiced total minus actual costs.',
+    )
+    btp_margin_percent = fields.Float(
+        string='Margin %',
+        digits=(5, 2),
+        compute='_compute_btp_margin_fields',
+        store=True,
+        help='Net margin as percentage of invoiced total.',
+    )
+
+    @api.depends('btp_sale_order_id', 'btp_sale_order_id.amount_total',
+                 'btp_invoice_ids', 'btp_invoice_ids.state', 'btp_invoice_ids.amount_total',
+                 'btp_consumption_ids', 'btp_consumption_ids.real_qty', 'btp_consumption_ids.product_id')
+    def _compute_btp_margin_fields(self):
+        for site in self:
+            quote_total = 0.0
+            if site.btp_sale_order_id:
+                quote_total = site.btp_sale_order_id.amount_total or 0.0
+            site.btp_quote_total = quote_total
+            invoiced = sum(
+                site.btp_invoice_ids.filtered(lambda m: m.state == 'posted').mapped('amount_total')
+            )
+            site.btp_invoiced_total = invoiced
+            costs = site._btp_actual_costs_compute()
+            site.btp_actual_costs = costs
+            site.btp_net_margin = invoiced - costs
+            if invoiced and (invoiced - costs) is not None:
+                site.btp_margin_percent = ((invoiced - costs) / invoiced) * 100.0
+            else:
+                site.btp_margin_percent = 0.0
+
+    def _btp_actual_costs_compute(self):
+        """Actual costs from consumptions (real_qty × product cost). Pointing/labor can be extended later."""
+        self.ensure_one()
+        cost = 0.0
+        consumptions = self.env['btp.site.consumption'].search([('site_id', '=', self.id)])
+        for c in consumptions:
+            price = c.product_id.standard_price if c.product_id else 0.0
+            cost += (c.real_qty or 0.0) * price
+        return cost
 
     @api.depends('btp_invoice_ids', 'btp_invoice_ids.btp_invoice_type', 'btp_invoice_ids.state')
     def _compute_btp_has_final_invoice(self):

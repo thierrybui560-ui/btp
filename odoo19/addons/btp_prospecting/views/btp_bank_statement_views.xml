@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Add Import (CSV) button to Bank Statements list view -->
+    <record id="view_bank_statement_tree_btp_import" model="ir.ui.view">
+        <field name="name">account.bank.statement.list.btp.import</field>
+        <field name="model">account.bank.statement</field>
+        <field name="inherit_id" ref="account.view_bank_statement_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <header>
+                    <button name="%(btp_prospecting.action_btp_bank_statement_import_wizard)d"
+                            string="Import (CSV)"
+                            type="action"
+                            class="btn-primary"
+                            display="always"/>
+                </header>
+            </xpath>
+        </field>
+    </record>
+</odoo>

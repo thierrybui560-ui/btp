@@ -109,4 +109,13 @@ access_btp_situation_line_admin,btp.situation.line.admin,model_btp_situation_lin
 access_btp_deposit_invoice_wizard_salesperson,btp.deposit.invoice.wizard.salesperson,model_btp_deposit_invoice_wizard,group_btp_salesperson,1,1,1,1
 access_btp_deposit_invoice_wizard_manager,btp.deposit.invoice.wizard.manager,model_btp_deposit_invoice_wizard,group_btp_manager,1,1,1,1
 access_btp_deposit_invoice_wizard_admin,btp.deposit.invoice.wizard.admin,model_btp_deposit_invoice_wizard,group_btp_admin,1,1,1,1
+access_btp_cash_forecast_salesperson,btp.cash.forecast.salesperson,model_btp_cash_forecast,group_btp_salesperson,1,1,1,1
+access_btp_cash_forecast_manager,btp.cash.forecast.manager,model_btp_cash_forecast,group_btp_manager,1,1,1,1
+access_btp_cash_forecast_admin,btp.cash.forecast.admin,model_btp_cash_forecast,group_btp_admin,1,1,1,1
+access_btp_cash_forecast_line_salesperson,btp.cash.forecast.line.salesperson,model_btp_cash_forecast_line,group_btp_salesperson,1,1,1,1
+access_btp_cash_forecast_line_manager,btp.cash.forecast.line.manager,model_btp_cash_forecast_line,group_btp_manager,1,1,1,1
+access_btp_cash_forecast_line_admin,btp.cash.forecast.line.admin,model_btp_cash_forecast_line,group_btp_admin,1,1,1,1
+access_btp_bank_statement_import_wizard_user,btp.bank.statement.import.wizard.user,model_btp_bank_statement_import_wizard,account.group_account_user,1,1,1,1
+access_btp_bank_statement_import_wizard_readonly,btp.bank.statement.import.wizard.readonly,model_btp_bank_statement_import_wizard,account.group_account_readonly,1,1,1,1
+access_btp_bank_statement_import_wizard_invoice,btp.bank.statement.import.wizard.invoice,model_btp_bank_statement_import_wizard,account.group_account_invoice,1,1,1,1
 

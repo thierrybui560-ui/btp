@@ -52,6 +52,15 @@ Module 7 - Invoicing & Situations:
 * Deposit and final invoicing; retention of guarantee (default 5%, configurable per site)
 * Invoice numbering YYYYMMNNN + alphabetical revision index
 * Payment/reminder follow-up (D-7, D0, D+15, D+30, formal notice)
+
+Module 8 - Payments &amp; Finances:
+-----------------------------------
+* Client payments follow-up (outstanding, HT/TTC, due date, paid, balance, color codes)
+* Supplier/subcontractor payments follow-up (outstanding, due date, status)
+* Financial forecasts (cash plan: inflows/outflows by period, filter by site/company)
+* Analytical margins by site (quote vs actual, net margin, forecast vs actual)
+* Banking: use Odoo bank statements and reconciliation
+* Multi-company consolidation views
     """,
     'author': 'BTP Solutions',
     'website': 'https://www.example.com',
@@ -66,6 +75,7 @@ Module 7 - Invoicing & Situations:
         'purchase',
         'account',
         'web_tour',
+        'spreadsheet_dashboard',
     ],
     'external_dependencies': {
         'python': ['requests'],
@@ -106,6 +116,13 @@ Module 7 - Invoicing & Situations:
         'views/btp_situation_views.xml',
         'views/btp_deposit_invoice_wizard_views.xml',
         'views/btp_invoice_views.xml',
+        'views/btp_outstanding_actions.xml',  # before outstanding views (they reference these actions)
+        'views/btp_client_outstanding_views.xml',
+        'views/btp_supplier_outstanding_views.xml',
+        'views/btp_cash_forecast_views.xml',
+        'views/btp_site_margin_views.xml',
+        'views/btp_bank_statement_views.xml',
+        'wizard/btp_bank_statement_import_wizard_views.xml',
         'views/btp_prospecting_menus.xml',
         'reports/btp_lead_reports.xml',
         'reports/btp_lead_templates.xml',

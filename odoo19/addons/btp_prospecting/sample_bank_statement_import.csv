@@ -1,0 +1,23 @@
+date,amount,label
+2025-02-01,1500.00,Client payment - Invoice INV/2025/001
+2025-02-02,-320.50,Supplier - Office supplies
+2025-02-03,2800.00,Client payment - Invoice INV/2025/002
+2025-02-04,-150.00,Bank charges
+2025-02-05,-890.25,Supplier - Materials
+2025-02-06,420.00,Client payment - Invoice INV/2025/003
+2025-02-07,-45.00,Transfer fee
+2025-02-10,1750.00,Client payment - Invoice INV/2025/004
+2025-02-11,-2100.00,Supplier - Subcontractor
+2025-02-12,950.50,Client payment - Invoice INV/2025/005
+2025-02-13,-75.00,Insurance premium
+2025-02-14,3300.00,Client payment - Invoice INV/2025/006
+2025-02-17,-500.00,Rent
+2025-02-18,-120.30,Utilities
+2025-02-19,2100.00,Client payment - Invoice INV/2025/007
+2025-02-20,-680.00,Supplier - Equipment
+2025-02-21,550.00,Client payment - Invoice INV/2025/008
+2025-02-24,-95.00,Subscription
+2025-02-25,1890.00,Client payment - Invoice INV/2025/009
+2025-02-26,-420.00,Supplier - Services
+2025-02-27,720.00,Client payment - Invoice INV/2025/010
+2025-02-28,-35.00,Bank fee

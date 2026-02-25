@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Server action: open customer invoice form in create mode (no record until user saves; Discard leaves nothing) -->
+    <record id="action_btp_new_customer_invoice" model="ir.actions.server">
+        <field name="name">New Customer Invoice</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="state">code</field>
+        <field name="code"><![CDATA[
+action = {
+    'type': 'ir.actions.act_window',
+    'name': 'Customer Invoice',
+    'res_model': 'account.move',
+    'view_mode': 'form',
+    'target': 'current',
+    'context': dict(env.context, default_move_type='out_invoice'),
+}
+action
+]]></field>
+    </record>
+
+    <!-- Server action: open vendor bill form in create mode (no record until user saves; Discard leaves nothing) -->
+    <record id="action_btp_new_vendor_bill" model="ir.actions.server">
+        <field name="name">New Vendor Bill</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="state">code</field>
+        <field name="code"><![CDATA[
+action = {
+    'type': 'ir.actions.act_window',
+    'name': 'Vendor Bill',
+    'res_model': 'account.move',
+    'view_mode': 'form',
+    'target': 'current',
+    'context': dict(env.context, default_move_type='in_invoice', display_account_trust=True),
+}
+action
+]]></field>
+    </record>
+</odoo>

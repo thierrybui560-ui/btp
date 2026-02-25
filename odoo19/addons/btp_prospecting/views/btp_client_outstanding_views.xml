@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Module 8: Client outstanding (customer invoices: HT/TTC, due date, paid, balance) -->
+    <record id="view_btp_client_outstanding_list" model="ir.ui.view">
+        <field name="name">account.move.btp.client.outstanding</field>
+        <field name="model">account.move</field>
+        <field name="arch" type="xml">
+            <list string="Client Outstanding" create="false" edit="true" delete="true"
+                  decoration-success="payment_state == 'paid'"
+                  decoration-warning="payment_state in ('not_paid', 'partial')"
+                  decoration-danger="payment_state in ('not_paid', 'partial')">
+                <header>
+                    <button name="%(btp_prospecting.action_btp_new_customer_invoice)d" type="action" string="New" class="btn-primary" display="always"/>
+                </header>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="invoice_date" string="Invoice Date"/>
+                <field name="invoice_date_due" string="Due Date"/>
+                <field name="amount_untaxed" string="Untaxed (HT)" sum="Total (HT)"/>
+                <field name="amount_total" string="Total (TTC)" sum="Total (TTC)"/>
+                <field name="amount_residual" string="Balance Due" sum="Balance Due"/>
+                <field name="payment_state" widget="badge" decoration-success="payment_state == 'paid'" decoration-warning="payment_state in ('not_paid', 'partial')" decoration-danger="payment_state in ('not_paid', 'partial')" decoration-info="payment_state == 'in_payment'"/>
+                <field name="state" column_invisible="1"/>
+                <field name="btp_site_id" optional="show"/>
+                <field name="btp_invoice_sequence" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_btp_client_outstanding" model="ir.actions.act_window">
+        <field name="name">Client Outstanding</field>
+        <field name="res_model">account.move</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_btp_client_outstanding_list"/>
+        <field name="search_view_id" ref="account.view_account_invoice_filter"/>
+        <field name="context">{'default_move_type': 'out_invoice'}</field>
+        <field name="domain">[('move_type', '=', 'out_invoice'), ('state', 'in', ('posted', 'draft'))]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No customer invoices to follow up.</p>
+            <p>Green = paid, Orange = unpaid/partial, Red = overdue. Use filters for BTP site or company.</p>
+        </field>
+    </record>
+</odoo>

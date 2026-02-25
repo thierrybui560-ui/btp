@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_btp_cash_forecast_form" model="ir.ui.view">
+        <field name="name">btp.cash.forecast.form</field>
+        <field name="model">btp.cash.forecast</field>
+        <field name="arch" type="xml">
+            <form string="Cash Forecast">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                            <field name="group_by"/>
+                        </group>
+                        <group>
+                            <field name="project_id" options="{'no_create': True}"/>
+                            <field name="company_id" options="{'no_create': True}" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <footer>
+                        <button name="action_compute" string="Generate Forecast" type="object" class="btn-primary"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_btp_cash_forecast_line_list" model="ir.ui.view">
+        <field name="name">btp.cash.forecast.line.list</field>
+        <field name="model">btp.cash.forecast.line</field>
+        <field name="arch" type="xml">
+            <list string="Forecast Lines" create="false" edit="false" delete="false">
+                <field name="period_label"/>
+                <field name="date"/>
+                <field name="amount_in" sum="Total In"/>
+                <field name="amount_out" sum="Total Out"/>
+                <field name="balance" sum="Balance"/>
+                <field name="cumulative_balance"/>
+                <field name="project_id" optional="show"/>
+                <field name="company_id" optional="show" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_btp_cash_forecast" model="ir.actions.act_window">
+        <field name="name">Cash Forecast</field>
+        <field name="res_model">btp.cash.forecast</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

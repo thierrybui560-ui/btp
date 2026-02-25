@@ -35,4 +35,7 @@ from . import res_config_settings
 from . import account_move
 from . import btp_situation
 from . import btp_situation_line
+# Module 8 - Payments & Finances
+from . import btp_cash_forecast
+from . import spreadsheet_dashboard
 
