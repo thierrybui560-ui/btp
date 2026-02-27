@@ -130,4 +130,10 @@ access_btp_report_template_admin,btp.report.template.admin,model_btp_report_temp
 access_btp_export_job_salesperson,btp.export.job.salesperson,model_btp_export_job,group_btp_salesperson,1,1,1,0
 access_btp_export_job_manager,btp.export.job.manager,model_btp_export_job,group_btp_manager,1,1,1,1
 access_btp_export_job_admin,btp.export.job.admin,model_btp_export_job,group_btp_admin,1,1,1,1
+access_btp_call_report_salesperson,btp.call.report.salesperson,model_btp_call_report,group_btp_salesperson,1,1,1,0
+access_btp_call_report_manager,btp.call.report.manager,model_btp_call_report,group_btp_manager,1,1,1,1
+access_btp_call_report_admin,btp.call.report.admin,model_btp_call_report,group_btp_admin,1,1,1,1
+access_btp_call_report_action_salesperson,btp.call.report.action.salesperson,model_btp_call_report_action,group_btp_salesperson,1,1,1,0
+access_btp_call_report_action_manager,btp.call.report.action.manager,model_btp_call_report_action,group_btp_manager,1,1,1,1
+access_btp_call_report_action_admin,btp.call.report.action.admin,model_btp_call_report_action,group_btp_admin,1,1,1,1
 

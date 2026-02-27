@@ -89,6 +89,7 @@ Module 9 - Stocks &amp; Logistics:
         'account',
         'web_tour',
         'spreadsheet_dashboard',
+        'calendar',
     ],
     'external_dependencies': {
         'python': ['requests'],
@@ -140,12 +141,15 @@ Module 9 - Stocks &amp; Logistics:
         'wizard/btp_bank_statement_import_wizard_views.xml',
         'views/btp_stock_views.xml',
         'views/btp_report_views.xml',
+        'views/btp_call_report_views.xml',
+        'views/btp_calendar_views.xml',
         'views/btp_prospecting_menus.xml',
         'reports/btp_lead_reports.xml',
         'reports/btp_lead_templates.xml',
         'reports/btp_report_generic_reports.xml',
         'reports/btp_report_generic_templates.xml',
         'data/btp_report_schedule_cron.xml',
+        'data/btp_activity_escalation_cron.xml',
     ],
     'demo': [
         'demo/btp_lead_demo.xml',

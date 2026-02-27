@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Call / Meeting Report List -->
+    <record id="view_btp_call_report_tree" model="ir.ui.view">
+        <field name="name">btp.call.report.tree</field>
+        <field name="model">btp.call.report</field>
+        <field name="arch" type="xml">
+            <list string="Call / Meeting Reports" decoration-muted="report_type == 'call'" decoration-primary="report_type == 'meeting'">
+                <field name="name"/>
+                <field name="report_type" widget="badge"/>
+                <field name="partner_id"/>
+                <field name="btp_site_id"/>
+                <field name="btp_lead_id"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="date" widget="datetime"/>
+                <field name="duration_minutes"/>
+                <field name="interlocutor"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Call / Meeting Report Form -->
+    <record id="view_btp_call_report_form" model="ir.ui.view">
+        <field name="name">btp.call.report.form</field>
+        <field name="model">btp.call.report</field>
+        <field name="arch" type="xml">
+            <form string="Call / Meeting Report">
+                <header>
+                    <button name="action_create_tasks" string="Create Tasks from Actions" type="object" class="oe_highlight"
+                            invisible="not action_ids"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name" placeholder="Subject of the call or meeting..."/>
+                            <field name="report_type"/>
+                            <field name="partner_id" options="{'no_create': False}"/>
+                            <field name="btp_site_id"/>
+                            <field name="btp_lead_id"/>
+                            <field name="sale_order_id"/>
+                            <field name="calendar_event_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="user_id" options="{'no_create': True}"/>
+                            <field name="date"/>
+                            <field name="duration_minutes"/>
+                            <field name="interlocutor" placeholder="Person spoken to (calls)"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Summary &amp; Decision" name="summary">
+                            <group>
+                                <field name="summary" placeholder="Summary of the exchange..."/>
+                                <field name="decision" placeholder="Decisions made or outcomes..."/>
+                            </group>
+                        </page>
+                        <page string="Follow-up Actions" name="actions">
+                            <field name="action_ids" nolabel="1" context="{'default_call_report_id': id}">
+                                <list editable="bottom" create="1" delete="1">
+                                    <field name="name" placeholder="Action description..."/>
+                                    <field name="assigned_to_id" options="{'no_create': True}"/>
+                                    <field name="deadline_date"/>
+                                    <field name="note" optional="show"/>
+                                    <field name="mail_activity_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search: Call / Meeting Reports -->
+    <record id="view_btp_call_report_search" model="ir.ui.view">
+        <field name="name">btp.call.report.search</field>
+        <field name="model">btp.call.report</field>
+        <field name="arch" type="xml">
+            <search string="Search Call Reports">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="btp_site_id"/>
+                <field name="btp_lead_id"/>
+                <field name="user_id"/>
+                <filter string="Calls" name="calls" domain="[('report_type', '=', 'call')]"/>
+                <filter string="Meetings" name="meetings" domain="[('report_type', '=', 'meeting')]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action: Call / Meeting Reports -->
+    <record id="action_btp_call_reports" model="ir.actions.act_window">
+        <field name="name">Call / Meeting Reports</field>
+        <field name="res_model">btp.call.report</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_btp_call_report_search"/>
+        <field name="context">{'default_report_type': 'call', 'default_user_id': uid}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create a call or meeting report</p>
+            <p>Record phone calls and meetings with third parties (clients, suppliers, subcontractors). Add a summary, decisions, and follow-up actions. Use "Create Tasks from Actions" to turn actions into activities on the third party file with due dates.</p>
+        </field>
+    </record>
+</odoo>

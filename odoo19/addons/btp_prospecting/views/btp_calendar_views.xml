@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Add BTP Site and Lead to Calendar Event form (Module 12) -->
+    <record id="view_calendar_event_form_btp" model="ir.ui.view">
+        <field name="name">calendar.event.form.btp</field>
+        <field name="model">calendar.event</field>
+        <field name="inherit_id" ref="calendar.view_calendar_event_form"/>
+        <field name="arch" type="xml">
+            <!-- Add BTP section after the main group (Guests / Organizer) so it appears above Notes/Options -->
+            <xpath expr="//sheet/group[.//field[@name='partner_ids']]" position="after">
+                <group string="BTP" name="btp_link">
+                    <field name="btp_site_id" options="{'no_create': True}"/>
+                    <field name="btp_lead_id" options="{'no_create': True}"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

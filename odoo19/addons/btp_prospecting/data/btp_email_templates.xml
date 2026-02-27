@@ -174,6 +174,40 @@
                 </div>
             </field>
         </record>
+
+        <!-- Module 12: BTP Quote Reminder (sale.order) -->
+        <record id="email_template_btp_quote_reminder" model="mail.template">
+            <field name="name">BTP Quote: Reminder</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="subject">Quote reminder – {{ object.name }}</field>
+            <field name="email_from">{{ object.company_id.email or user.email_formatted }}</field>
+            <field name="email_to">{{ object.partner_id.email_formatted }}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p>Dear <t t-esc="object.partner_id.name"/>,</p>
+                    <p>We would like to remind you of our quote <strong><t t-esc="object.name"/></strong> (Site: <t t-esc="object.btp_site_id.name or 'N/A'"/>).</p>
+                    <p>Please do not hesitate to contact us if you have any questions or wish to discuss the terms.</p>
+                    <p>Best regards,<br/><t t-esc="object.company_id.name"/></p>
+                </div>
+            </field>
+        </record>
+
+        <!-- Module 12: BTP Prospecting (btp.lead) -->
+        <record id="email_template_btp_prospecting" model="mail.template">
+            <field name="name">BTP Lead: Prospecting</field>
+            <field name="model_id" ref="model_btp_lead"/>
+            <field name="subject">Follow-up: {{ object.name }}</field>
+            <field name="email_from">{{ object.user_id.email_formatted or user.email_formatted }}</field>
+            <field name="email_to">{{ object.partner_id.email_formatted or object.partner_email or '' }}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p>Dear <t t-esc="object.partner_id.name or object.partner_name or 'Sir or Madam'"/>,</p>
+                    <p>Following our previous exchange regarding <t t-esc="object.site_name or object.name"/>, we would like to stay in touch and discuss how we can support your project.</p>
+                    <p>Please feel free to contact us at your convenience.</p>
+                    <p>Best regards,<br/><t t-esc="object.user_id.name"/></p>
+                </div>
+            </field>
+        </record>
     </data>
 </odoo>
 

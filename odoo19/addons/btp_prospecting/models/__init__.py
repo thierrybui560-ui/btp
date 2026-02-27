@@ -49,4 +49,8 @@ from . import btp_qse_corrective_action
 # Module 11 — Reports & Exports
 from . import btp_report_template
 from . import btp_export_job
+# Module 12 — Third Parties & Integrated Messaging
+from . import btp_call_report
+from . import calendar_event
+from . import mail_activity
 
