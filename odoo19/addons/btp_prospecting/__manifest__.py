@@ -71,6 +71,7 @@ Module 9 - Stocks &amp; Logistics:
 * Inventory and valuation (FIFO/standard via Odoo Stock)
 * Reports: stock by warehouse/location, consumption by site, reserved vs available
 * Module 10 - Quality &amp; Safety (QHSE): QHSE incidents and corrective actions per site; documents (PPSPS, DOE, certificates) via Site Documents
+* Module 11 - Reports &amp; Exports: configurable report templates (by lot, site, client, salesperson, article, supplier, QHSE); PDF/Excel/CSV; scheduled sending by email; export history
     """,
     'author': 'BTP Solutions',
     'website': 'https://www.example.com',
@@ -138,9 +139,13 @@ Module 9 - Stocks &amp; Logistics:
         'views/btp_bank_statement_views.xml',
         'wizard/btp_bank_statement_import_wizard_views.xml',
         'views/btp_stock_views.xml',
+        'views/btp_report_views.xml',
         'views/btp_prospecting_menus.xml',
         'reports/btp_lead_reports.xml',
         'reports/btp_lead_templates.xml',
+        'reports/btp_report_generic_reports.xml',
+        'reports/btp_report_generic_templates.xml',
+        'data/btp_report_schedule_cron.xml',
     ],
     'demo': [
         'demo/btp_lead_demo.xml',

@@ -124,4 +124,10 @@ access_btp_qse_incident_admin,btp.qse.incident.admin,model_btp_qse_incident,grou
 access_btp_qse_corrective_action_salesperson,btp.qse.corrective.action.salesperson,model_btp_qse_corrective_action,group_btp_salesperson,1,1,1,0
 access_btp_qse_corrective_action_manager,btp.qse.corrective.action.manager,model_btp_qse_corrective_action,group_btp_manager,1,1,1,1
 access_btp_qse_corrective_action_admin,btp.qse.corrective.action.admin,model_btp_qse_corrective_action,group_btp_admin,1,1,1,1
+access_btp_report_template_salesperson,btp.report.template.salesperson,model_btp_report_template,group_btp_salesperson,1,1,1,0
+access_btp_report_template_manager,btp.report.template.manager,model_btp_report_template,group_btp_manager,1,1,1,1
+access_btp_report_template_admin,btp.report.template.admin,model_btp_report_template,group_btp_admin,1,1,1,1
+access_btp_export_job_salesperson,btp.export.job.salesperson,model_btp_export_job,group_btp_salesperson,1,1,1,0
+access_btp_export_job_manager,btp.export.job.manager,model_btp_export_job,group_btp_manager,1,1,1,1
+access_btp_export_job_admin,btp.export.job.admin,model_btp_export_job,group_btp_admin,1,1,1,1
 

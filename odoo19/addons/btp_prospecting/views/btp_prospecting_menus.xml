@@ -333,5 +333,21 @@
               action="stock.action_view_quants"
               sequence="40"
               groups="stock.group_stock_user"/>
+
+    <!-- Reports &amp; Exports (Module 11) -->
+    <menuitem id="menu_btp_reports_exports"
+              name="Reports &amp; Exports"
+              parent="menu_btp_prospecting_root"
+              sequence="48"/>
+    <menuitem id="menu_btp_report_templates"
+              name="Report Templates"
+              parent="menu_btp_reports_exports"
+              action="action_btp_report_templates"
+              sequence="10"/>
+    <menuitem id="menu_btp_export_history"
+              name="Export History"
+              parent="menu_btp_reports_exports"
+              action="action_btp_export_jobs"
+              sequence="20"/>
 </odoo>
 
