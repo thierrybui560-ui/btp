@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Stock Move: BTP Site, Origin, Consumption link -->
+    <record id="view_stock_move_form_btp" model="ir.ui.view">
+        <field name="name">stock.move.form.btp</field>
+        <field name="model">stock.move</field>
+        <field name="inherit_id" ref="stock.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='origin_grp']" position="after">
+                <group name="btp_grp" string="BTP" groups="btp_prospecting.group_btp_salesperson">
+                    <field name="btp_site_id" options="{'no_create': True}"/>
+                    <field name="btp_origin_type"/>
+                    <field name="btp_consumption_id" readonly="1" options="{'no_create': True}"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_stock_move_tree_btp" model="ir.ui.view">
+        <field name="name">stock.move.list.btp</field>
+        <field name="model">stock.move</field>
+        <field name="inherit_id" ref="stock.view_move_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='state']" position="after">
+                <field name="btp_site_id" optional="show"/>
+                <field name="btp_origin_type" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_stock_move_search_btp" model="ir.ui.view">
+        <field name="name">stock.move.search.btp</field>
+        <field name="model">stock.move</field>
+        <field name="inherit_id" ref="stock.view_move_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <field name="btp_site_id" string="BTP Site"/>
+                <filter string="BTP Site" name="filter_btp_site" domain="[('btp_site_id', '!=', False)]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Stock Picking: BTP Site in header + BTP Site/Origin in Operations list (inline edit) -->
+    <record id="view_stock_picking_form_btp" model="ir.ui.view">
+        <field name="name">stock.picking.form.btp</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='origin']" position="after">
+                <field name="btp_site_id" options="{'no_create': True}" groups="btp_prospecting.group_btp_salesperson"/>
+            </xpath>
+            <!-- Add BTP Site and BTP Origin to Operations list so user can set them inline without opening move form -->
+            <xpath expr="//field[@name='move_ids']/list/field[@name='product_uom_qty']" position="after">
+                <field name="btp_site_id" optional="show" groups="btp_prospecting.group_btp_salesperson" options="{'no_create': True}" string="Site" width="240"/>
+                <field name="btp_origin_type" optional="show" groups="btp_prospecting.group_btp_salesperson" string="BTP Origin" width="160"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Transfers list: narrow Status column, set BTP Site width for full text -->
+    <record id="view_stock_picking_tree_btp" model="ir.ui.view">
+        <field name="name">stock.picking.list.btp</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.vpicktree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="btp_site_id" optional="show" groups="btp_prospecting.group_btp_salesperson" width="240"/>
+            </xpath>
+            <xpath expr="//field[@name='state']" position="attributes">
+                <attribute name="width">100</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Stock Location: BTP Site (site depot) -->
+    <record id="view_stock_location_form_btp" model="ir.ui.view">
+        <field name="name">stock.location.form.btp</field>
+        <field name="model">stock.location</field>
+        <field name="inherit_id" ref="stock.view_location_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='additional_info']" position="after">
+                <group name="btp_location_grp" string="BTP" groups="btp_prospecting.group_btp_salesperson">
+                    <field name="btp_site_id" options="{'no_create': True}"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Consumption form: Stock Move link + Create outbound button -->
+    <record id="view_btp_site_consumption_form_stock" model="ir.ui.view">
+        <field name="name">btp.site.consumption.form.stock</field>
+        <field name="model">btp.site.consumption</field>
+        <field name="inherit_id" ref="btp_prospecting.view_btp_site_consumption_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[.//field[@name='overconsumption_alert']]" position="after">
+                <group name="stock_grp" string="Stock" groups="btp_prospecting.group_btp_salesperson">
+                    <field name="stock_move_id" readonly="1" options="{'no_create': True}"/>
+                    <div class="text-muted mb-2" invisible="stock_move_id">Deduct stock for this consumption (storable articles only).</div>
+                    <button name="action_create_outbound_move" type="object" string="Create Outbound Move"
+                        invisible="stock_move_id"
+                        class="btn-primary"
+                        title="Create a stock move to deduct quantity from inventory (enable Track Inventory on the product)."/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

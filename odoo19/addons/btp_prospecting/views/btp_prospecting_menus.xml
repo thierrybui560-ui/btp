@@ -279,5 +279,38 @@
               action="account.open_account_journal_dashboard_kanban"
               sequence="5"
               groups="account.group_account_user"/>
+
+    <!-- Stocks &amp; Logistics (Module 9) -->
+    <menuitem id="menu_btp_stocks_logistics"
+              name="Stocks &amp; Logistics"
+              parent="menu_btp_prospecting_root"
+              sequence="42"/>
+
+    <menuitem id="menu_btp_stock_transfers"
+              name="Transfers"
+              parent="menu_btp_stocks_logistics"
+              action="stock.action_picking_tree_all"
+              sequence="10"
+              groups="stock.group_stock_user"/>
+
+    <menuitem id="menu_btp_stock_moves"
+              name="Moves"
+              parent="menu_btp_stocks_logistics"
+              action="stock.stock_move_action"
+              sequence="20"
+              groups="stock.group_stock_user"/>
+
+    <menuitem id="menu_btp_stock_consumptions"
+              name="Consumptions"
+              parent="menu_btp_stocks_logistics"
+              action="action_btp_site_consumption"
+              sequence="30"/>
+
+    <menuitem id="menu_btp_stock_products"
+              name="Products (Stock)"
+              parent="menu_btp_stocks_logistics"
+              action="stock.action_view_quants"
+              sequence="40"
+              groups="stock.group_stock_user"/>
 </odoo>
 

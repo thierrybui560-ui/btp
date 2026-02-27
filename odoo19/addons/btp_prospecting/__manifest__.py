@@ -61,6 +61,15 @@ Module 8 - Payments &amp; Finances:
 * Analytical margins by site (quote vs actual, net margin, forecast vs actual)
 * Banking: use Odoo bank statements and reconciliation
 * Multi-company consolidation views
+
+Module 9 - Stocks &amp; Logistics:
+----------------------------------
+* Multi-warehouses (headquarters, agencies, site depots) with BTP site link on locations
+* Stock moves linked to site and origin type (client order, site consumption, transfer, etc.)
+* Reservation from client order (sale_stock); delivery moves carry BTP site
+* Site consumptions optionally linked to stock moves; outbound from consumption
+* Inventory and valuation (FIFO/standard via Odoo Stock)
+* Reports: stock by warehouse/location, consumption by site, reserved vs available
     """,
     'author': 'BTP Solutions',
     'website': 'https://www.example.com',
@@ -71,8 +80,10 @@ Module 8 - Payments &amp; Finances:
         'contacts',
         'crm',
         'sale',
+        'sale_stock',
         'project',
         'purchase',
+        'stock',
         'account',
         'web_tour',
         'spreadsheet_dashboard',
@@ -123,6 +134,7 @@ Module 8 - Payments &amp; Finances:
         'views/btp_site_margin_views.xml',
         'views/btp_bank_statement_views.xml',
         'wizard/btp_bank_statement_import_wizard_views.xml',
+        'views/btp_stock_views.xml',
         'views/btp_prospecting_menus.xml',
         'reports/btp_lead_reports.xml',
         'reports/btp_lead_templates.xml',

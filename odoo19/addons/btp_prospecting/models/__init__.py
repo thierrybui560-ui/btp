@@ -38,4 +38,9 @@ from . import btp_situation_line
 # Module 8 - Payments & Finances
 from . import btp_cash_forecast
 from . import spreadsheet_dashboard
+# Module 9 - Stocks & Logistics
+from . import stock_location
+from . import stock_move
+from . import stock_rule
+from . import stock_picking
 

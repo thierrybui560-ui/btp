@@ -38,9 +38,9 @@ class BtpSiteConsumption(models.Model):
         string='Article',
         required=True,
         ondelete='restrict',
-        domain=[('type', '=', 'consu')],
+        domain=[('type', 'in', ['consu', 'product'])],
         index=True,
-        help='Consumed article (product).'
+        help='Consumed article (consumable or storable for stock traceability).'
     )
     planned_qty = fields.Float(
         string='Planned Quantity',
@@ -74,6 +74,14 @@ class BtpSiteConsumption(models.Model):
         store=True,
         help='True if actual consumption exceeds planned.'
     )
+    stock_move_id = fields.Many2one(
+        'stock.move',
+        string='Stock Move',
+        ondelete='set null',
+        index=True,
+        copy=False,
+        help='Outbound stock move that fulfilled this consumption (Module 9).',
+    )
     notes = fields.Text(string='Notes')
 
     @api.depends('planned_qty', 'real_qty')
@@ -85,3 +93,54 @@ class BtpSiteConsumption(models.Model):
     def _compute_overconsumption_alert(self):
         for r in self:
             r.overconsumption_alert = r.planned_qty > 0 and r.variance > 0
+
+    def action_create_outbound_move(self):
+        """Create an outbound stock move for this consumption (Module 9). Only for storable products."""
+        self.ensure_one()
+        if self.stock_move_id:
+            raise ValidationError(_('A stock move is already linked to this consumption.'))
+        # Odoo 19: storable = Track Inventory (is_storable), not type; type is consu/service/combo
+        if not getattr(self.product_id.product_tmpl_id, 'is_storable', False):
+            raise ValidationError(_('Outbound move can only be created for storable products. Enable "Track Inventory" on the product.'))
+        company = self.site_id.company_id or self.env.company
+        warehouse = self.env['stock.warehouse'].search([('company_id', '=', company.id)], limit=1)
+        if not warehouse:
+            raise ValidationError(_('No warehouse found for company %s.') % company.name)
+        qty = self.real_qty or self.planned_qty
+        if qty <= 0:
+            raise ValidationError(_('Set a positive actual or planned quantity before creating the move.'))
+        location_src = warehouse.lot_stock_id
+        location_dest = self.env['stock.location'].search([
+            ('company_id', '=', company.id),
+            ('btp_site_id', '=', self.site_id.id),
+        ], limit=1)
+        if not location_dest:
+            location_dest = company.scrap_location_id or warehouse.lot_stock_id
+        picking_type = warehouse.out_type_id or self.env['stock.picking.type'].search([
+            ('warehouse_id', '=', warehouse.id),
+            ('code', '=', 'outgoing'),
+        ], limit=1)
+        move_vals = {
+            'product_id': self.product_id.id,
+            'product_uom_qty': qty,
+            'product_uom': self.product_id.uom_id.id,
+            'location_id': location_src.id,
+            'location_dest_id': location_dest.id,
+            'company_id': company.id,
+            'origin': _('Site %s') % (self.site_id.btp_site_code or self.site_id.name),
+            'btp_site_id': self.site_id.id,
+            'btp_origin_type': 'site_consumption',
+            'btp_consumption_id': self.id,
+        }
+        if picking_type:
+            move_vals['picking_type_id'] = picking_type.id
+        move = self.env['stock.move'].create(move_vals)
+        move._action_confirm()
+        self.stock_move_id = move.id
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'stock.move',
+            'res_id': move.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
