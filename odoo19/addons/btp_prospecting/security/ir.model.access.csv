@@ -118,4 +118,10 @@ access_btp_cash_forecast_line_admin,btp.cash.forecast.line.admin,model_btp_cash_
 access_btp_bank_statement_import_wizard_user,btp.bank.statement.import.wizard.user,model_btp_bank_statement_import_wizard,account.group_account_user,1,1,1,1
 access_btp_bank_statement_import_wizard_readonly,btp.bank.statement.import.wizard.readonly,model_btp_bank_statement_import_wizard,account.group_account_readonly,1,1,1,1
 access_btp_bank_statement_import_wizard_invoice,btp.bank.statement.import.wizard.invoice,model_btp_bank_statement_import_wizard,account.group_account_invoice,1,1,1,1
+access_btp_qse_incident_salesperson,btp.qse.incident.salesperson,model_btp_qse_incident,group_btp_salesperson,1,1,1,0
+access_btp_qse_incident_manager,btp.qse.incident.manager,model_btp_qse_incident,group_btp_manager,1,1,1,1
+access_btp_qse_incident_admin,btp.qse.incident.admin,model_btp_qse_incident,group_btp_admin,1,1,1,1
+access_btp_qse_corrective_action_salesperson,btp.qse.corrective.action.salesperson,model_btp_qse_corrective_action,group_btp_salesperson,1,1,1,0
+access_btp_qse_corrective_action_manager,btp.qse.corrective.action.manager,model_btp_qse_corrective_action,group_btp_manager,1,1,1,1
+access_btp_qse_corrective_action_admin,btp.qse.corrective.action.admin,model_btp_qse_corrective_action,group_btp_admin,1,1,1,1
 

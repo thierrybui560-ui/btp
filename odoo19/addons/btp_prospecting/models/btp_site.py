@@ -86,6 +86,18 @@ class ProjectProject(models.Model):
         'site_id',
         string='Document Checklist'
     )
+    # Module 10 — Quality & Safety (QHSE)
+    btp_qse_incident_ids = fields.One2many(
+        'btp.qse.incident',
+        'site_id',
+        string='QHSE Incidents',
+        copy=False,
+    )
+    btp_qse_incident_count = fields.Integer(
+        string='Incidents',
+        compute='_compute_btp_qse_incident_count',
+        store=False,
+    )
     btp_missing_document_count = fields.Integer(
         string='Missing Documents',
         compute='_compute_document_status',
@@ -230,6 +242,11 @@ class ProjectProject(models.Model):
         for site in self:
             site.btp_invoice_count = len(site.btp_invoice_ids)
 
+    @api.depends('btp_qse_incident_ids')
+    def _compute_btp_qse_incident_count(self):
+        for site in self:
+            site.btp_qse_incident_count = len(site.btp_qse_incident_ids)
+
     @api.depends('task_ids', 'task_ids.btp_quote_item_id')
     def _compute_btp_planning_task_count(self):
         for site in self:
@@ -341,6 +358,18 @@ class ProjectProject(models.Model):
             'view_mode': 'list,form',
             'domain': [('btp_site_id', '=', self.id), ('move_type', '=', 'out_invoice')],
             'context': {'default_btp_site_id': self.id, 'default_move_type': 'out_invoice'},
+        }
+
+    def action_btp_view_qse_incidents(self):
+        """Open QHSE incidents for this site."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'btp.qse.incident',
+            'name': _('QHSE Incidents'),
+            'view_mode': 'list,form',
+            'domain': [('site_id', '=', self.id)],
+            'context': {'default_site_id': self.id},
         }
 
     def action_btp_create_deposit_invoice(self):

@@ -70,6 +70,7 @@ Module 9 - Stocks &amp; Logistics:
 * Site consumptions optionally linked to stock moves; outbound from consumption
 * Inventory and valuation (FIFO/standard via Odoo Stock)
 * Reports: stock by warehouse/location, consumption by site, reserved vs available
+* Module 10 - Quality &amp; Safety (QHSE): QHSE incidents and corrective actions per site; documents (PPSPS, DOE, certificates) via Site Documents
     """,
     'author': 'BTP Solutions',
     'website': 'https://www.example.com',
@@ -102,6 +103,7 @@ Module 9 - Stocks &amp; Logistics:
         'data/btp_quote_item_product.xml',
         'data/btp_quote_followup_cron.xml',
         'data/btp_site_document_cron.xml',
+        'data/btp_qse_incident_sequence.xml',
         'data/btp_invoice_sequence.xml',
         'data/btp_invoice_reminder_cron.xml',
         'data/btp_email_templates.xml',
@@ -119,6 +121,7 @@ Module 9 - Stocks &amp; Logistics:
         'views/btp_site_views.xml',
         'views/btp_planning_views.xml',
         'views/btp_site_document_views.xml',
+        'views/btp_qse_incident_views.xml',
         'views/btp_site_reports_views.xml',
         'views/btp_quote_views.xml',
         'views/btp_quote_reports_views.xml',
@@ -147,6 +150,7 @@ Module 9 - Stocks &amp; Logistics:
             'btp_prospecting/static/src/scss/btp_prospecting.scss',
         ],
     },
+    'post_init_hook': 'btp_prospecting.hooks.post_init_hook_qse_attachment_migration',
     'installable': True,
     'application': True,
     'auto_install': False,

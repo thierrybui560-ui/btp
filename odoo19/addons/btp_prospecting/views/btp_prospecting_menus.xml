@@ -212,6 +212,27 @@
               action="action_btp_site_document_analysis"
               sequence="30"/>
 
+    <!-- Quality &amp; Safety - QHSE (Module 10) -->
+    <menuitem id="menu_btp_qse"
+              name="Quality &amp; Safety (QHSE)"
+              parent="menu_btp_sites_documents"
+              sequence="32"/>
+    <menuitem id="menu_btp_qse_incidents"
+              name="Incidents"
+              parent="menu_btp_qse"
+              action="action_btp_qse_incident"
+              sequence="10"/>
+    <menuitem id="menu_btp_qse_incidents_new"
+              name="New"
+              parent="menu_btp_qse_incidents"
+              action="action_btp_qse_incident_new"
+              sequence="10"/>
+    <menuitem id="menu_btp_qse_incidents_in_progress"
+              name="In Progress"
+              parent="menu_btp_qse_incidents"
+              action="action_btp_qse_incident_in_progress"
+              sequence="20"/>
+
     <!-- Planning &amp; Yield (Module 6) -->
     <menuitem id="menu_btp_planning_yield"
               name="Planning &amp; Yield"

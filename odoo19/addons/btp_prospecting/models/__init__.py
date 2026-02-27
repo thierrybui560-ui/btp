@@ -43,4 +43,7 @@ from . import stock_location
 from . import stock_move
 from . import stock_rule
 from . import stock_picking
+# Module 10 — Quality & Safety (QHSE)
+from . import btp_qse_incident
+from . import btp_qse_corrective_action
 

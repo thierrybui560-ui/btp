@@ -33,6 +33,9 @@
                         <button class="oe_stat_button" type="object" name="action_btp_view_invoices" icon="fa-file-text-o" invisible="btp_invoice_count == 0">
                             <field string="Invoices" name="btp_invoice_count" widget="statinfo"/>
                         </button>
+                        <button class="oe_stat_button" type="object" name="action_btp_view_qse_incidents" icon="fa-exclamation-triangle" invisible="btp_qse_incident_count == 0">
+                            <field string="Incidents" name="btp_qse_incident_count" widget="statinfo"/>
+                        </button>
                     </div>
                     <group>
                         <group>
@@ -181,6 +184,21 @@
                                     <field name="version_label"/>
                                     <field name="issue_date"/>
                                     <field name="expiration_date"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Quality &amp; Safety (QHSE)" name="btp_qse">
+                            <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                                <button name="action_btp_view_qse_incidents" type="object" string="View all incidents" class="btn-link"/>
+                            </div>
+                            <field name="btp_qse_incident_ids" nolabel="1" context="{'default_site_id': id}" mode="list">
+                                <list create="1" delete="1" edit="1">
+                                    <field name="name"/>
+                                    <field name="date"/>
+                                    <field name="incident_type"/>
+                                    <field name="state"/>
+                                    <field name="responsible_id"/>
+                                    <field name="corrective_action_count" string="Actions"/>
                                 </list>
                             </field>
                         </page>

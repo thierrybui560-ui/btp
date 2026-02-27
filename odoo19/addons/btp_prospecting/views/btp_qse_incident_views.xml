@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- QHSE Incident list -->
+    <record id="view_btp_qse_incident_list" model="ir.ui.view">
+        <field name="name">btp.qse.incident.list</field>
+        <field name="model">btp.qse.incident</field>
+        <field name="arch" type="xml">
+            <list string="QHSE Incidents" default_order="date desc, id desc">
+                <field name="name"/>
+                <field name="site_id"/>
+                <field name="date"/>
+                <field name="incident_type"/>
+                <field name="state"/>
+                <field name="user_id"/>
+                <field name="responsible_id"/>
+                <field name="corrective_action_count" string="Actions"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- QHSE Incident form -->
+    <record id="view_btp_qse_incident_form" model="ir.ui.view">
+        <field name="name">btp.qse.incident.form</field>
+        <field name="model">btp.qse.incident</field>
+        <field name="arch" type="xml">
+            <form string="QHSE Incident">
+                <header>
+                    <button name="action_assign_me" string="Assign to me" type="object" class="btn-primary"
+                            invisible="state != 'new' or responsible_id"/>
+                    <button name="action_close" string="Close" type="object"
+                            invisible="state == 'closed'"/>
+                    <button name="action_reopen" string="Reopen" type="object"
+                            invisible="state != 'closed'"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name" readonly="1"/>
+                            <field name="site_id"/>
+                            <field name="company_id" invisible="1"/>
+                            <field name="date"/>
+                            <field name="incident_type"/>
+                            <field name="state"/>
+                            <field name="user_id" readonly="1"/>
+                            <field name="responsible_id"/>
+                        </group>
+                        <group>
+                            <field name="location"/>
+                            <field name="concerned_team"/>
+                            <field name="closed_date" invisible="state != 'closed'"/>
+                        </group>
+                    </group>
+                    <group string="Description" colspan="2">
+                        <field name="description" nolabel="1" placeholder="Describe the incident, location, circumstances..." colspan="2"/>
+                    </group>
+                    <group string="Photos / Attachments" colspan="2">
+                        <div class="text-muted mb-2">
+                            To attach photos: open the <strong>Chatter</strong> panel on the right side of the screen
+                            (click the message/activity icon if the panel is collapsed), then drag and drop files
+                            into the attachment area, or type a message and attach files there.
+                        </div>
+                        <field name="attachment_ids" nolabel="1" readonly="1" widget="many2many_binary"/>
+                    </group>
+                    <notebook>
+                        <page string="Corrective Actions" name="corrective_actions">
+                            <field name="corrective_action_ids" nolabel="1" context="{'default_incident_id': id}">
+                                <list create="1" delete="1" edit="1">
+                                    <field name="name"/>
+                                    <field name="description"/>
+                                    <field name="assigned_to_id"/>
+                                    <field name="deadline"/>
+                                    <field name="state"/>
+                                    <field name="done_date"/>
+                                    <button name="action_done" type="object" string="Mark done" icon="fa-check"
+                                            invisible="state != 'open'"/>
+                                    <button name="action_reopen" type="object" string="Reopen"
+                                            invisible="state != 'done'"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Internal Notes" name="notes">
+                            <field name="notes" nolabel="1" placeholder="Internal notes (QHSE, management)..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- QHSE Incident search -->
+    <record id="view_btp_qse_incident_search" model="ir.ui.view">
+        <field name="name">btp.qse.incident.search</field>
+        <field name="model">btp.qse.incident</field>
+        <field name="arch" type="xml">
+            <search string="Search Incidents">
+                <field name="name"/>
+                <field name="site_id"/>
+                <field name="description"/>
+                <field name="user_id"/>
+                <field name="responsible_id"/>
+                <filter string="New" name="state_new" domain="[('state', '=', 'new')]"/>
+                <filter string="In Progress" name="state_in_progress" domain="[('state', '=', 'in_progress')]"/>
+                <filter string="Closed" name="state_closed" domain="[('state', '=', 'closed')]"/>
+                <separator/>
+                <filter string="Accident" name="type_accident" domain="[('incident_type', '=', 'accident')]"/>
+                <filter string="Non-Conformity" name="type_non_conformity" domain="[('incident_type', '=', 'non_conformity')]"/>
+                <group>
+                    <filter string="Site" name="group_site" context="{'group_by': 'site_id'}"/>
+                    <filter string="Type" name="group_type" context="{'group_by': 'incident_type'}"/>
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_btp_qse_incident" model="ir.actions.act_window">
+        <field name="name">QHSE Incidents</field>
+        <field name="res_model">btp.qse.incident</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_btp_qse_incident_search"/>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create a new QHSE incident</p>
+            <p>Declare incidents, accidents, near misses or non-conformities linked to a site. Attach photos and define corrective actions.</p>
+        </field>
+    </record>
+
+    <record id="action_btp_qse_incident_new" model="ir.actions.act_window">
+        <field name="name">New</field>
+        <field name="res_model">btp.qse.incident</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_btp_qse_incident_search"/>
+        <field name="domain">[('state', '=', 'new')]</field>
+        <field name="context">{}</field>
+    </record>
+
+    <record id="action_btp_qse_incident_in_progress" model="ir.actions.act_window">
+        <field name="name">In Progress</field>
+        <field name="res_model">btp.qse.incident</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_btp_qse_incident_search"/>
+        <field name="domain">[('state', '=', 'in_progress')]</field>
+        <field name="context">{}</field>
+    </record>
+</odoo>
