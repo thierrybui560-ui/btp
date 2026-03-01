@@ -72,6 +72,7 @@ Module 9 - Stocks &amp; Logistics:
 * Reports: stock by warehouse/location, consumption by site, reserved vs available
 * Module 10 - Quality &amp; Safety (QHSE): QHSE incidents and corrective actions per site; documents (PPSPS, DOE, certificates) via Site Documents
 * Module 11 - Reports &amp; Exports: configurable report templates (by lot, site, client, salesperson, article, supplier, QHSE); PDF/Excel/CSV; scheduled sending by email; export history
+* Module 13 - Multi-companies: company selection and switching; strict data separation; shared clients/suppliers/articles and commercial conditions per company; shared leads; consolidated reports (turnover, cash, margin, shared clients distribution)
     """,
     'author': 'BTP Solutions',
     'website': 'https://www.example.com',
@@ -143,6 +144,7 @@ Module 9 - Stocks &amp; Logistics:
         'views/btp_report_views.xml',
         'views/btp_call_report_views.xml',
         'views/btp_calendar_views.xml',
+        'views/btp_multi_company_views.xml',
         'views/btp_prospecting_menus.xml',
         'reports/btp_lead_reports.xml',
         'reports/btp_lead_templates.xml',
@@ -159,6 +161,7 @@ Module 9 - Stocks &amp; Logistics:
             'btp_prospecting/static/src/scss/btp_prospecting.scss',
         ],
     },
+    'pre_init_hook': 'btp_prospecting.hooks.pre_init_hook_res_company_btp',
     'post_init_hook': 'btp_prospecting.hooks.post_init_hook_qse_attachment_migration',
     'installable': True,
     'application': True,

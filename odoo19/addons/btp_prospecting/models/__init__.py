@@ -5,6 +5,7 @@ from . import btp_lead
 from . import btp_lead_stage
 from . import res_users
 from . import res_partner
+from . import res_company
 from . import btp_company_hierarchy
 from . import btp_contact_career
 from . import btp_company_api

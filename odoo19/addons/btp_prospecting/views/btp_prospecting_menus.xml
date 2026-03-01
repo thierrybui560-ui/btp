@@ -24,6 +24,27 @@
               action="action_btp_lead_open"
               sequence="20"/>
 
+    <!-- Module 13 — Multi-companies -->
+    <menuitem id="menu_btp_multi_companies"
+              name="Multi-companies"
+              parent="menu_btp_prospecting_root"
+              sequence="85"
+              groups="btp_prospecting.group_btp_manager"/>
+
+    <menuitem id="menu_btp_multi_companies_settings"
+              name="Company Sharing Settings"
+              parent="menu_btp_multi_companies"
+              action="action_btp_res_company_multi"
+              sequence="10"
+              groups="btp_prospecting.group_btp_manager"/>
+
+    <menuitem id="menu_btp_consolidation_reports"
+              name="Consolidation Reports"
+              parent="menu_btp_multi_companies"
+              action="action_btp_consolidation_reports"
+              sequence="20"
+              groups="btp_prospecting.group_btp_manager"/>
+
     <!-- Configuration Menu -->
     <menuitem id="menu_btp_configuration"
               name="Configuration"

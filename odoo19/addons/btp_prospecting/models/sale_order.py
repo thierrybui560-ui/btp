@@ -129,6 +129,21 @@ class SaleOrder(models.Model):
         copy=False,
         help='Site created from this accepted quote/order'
     )
+    # Module 13 — Multi-companies: mark when document relates to shared client
+    btp_is_shared = fields.Boolean(
+        string='Shared Client',
+        compute='_compute_btp_is_shared',
+        store=True,
+        help='True when the client (partner) is shared with other companies.'
+    )
+
+    @api.depends('partner_id', 'partner_id.btp_shared_company_ids')
+    def _compute_btp_is_shared(self):
+        for order in self:
+            order.btp_is_shared = bool(
+                order.partner_id
+                and order.partner_id.btp_shared_company_ids
+            )
 
     @api.depends('btp_lot_ids')
     def _compute_lot_count(self):

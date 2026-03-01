@@ -16,6 +16,7 @@
                 <field name="btp_is_blocked" optional="hide"/>
                 <field name="btp_missing_document_count" optional="hide"/>
                 <field name="btp_expired_document_count" optional="hide"/>
+                <field name="btp_is_shared" optional="show" string="Shared client"/>
             </xpath>
         </field>
     </record>

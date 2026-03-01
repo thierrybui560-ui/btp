@@ -17,6 +17,11 @@ REPORT_SCOPE = [
     ('supplier_analysis', 'Supplier / Price Analysis'),
     ('qhse_incidents', 'QHSE Incidents by Site'),
     ('margin_consumption_combined', 'Net Margin & Article Consumption'),
+    # Module 13 — Multi-companies consolidation
+    ('consolidated_turnover', 'Consolidated Turnover by Company'),
+    ('consolidated_cash', 'Consolidated Cash / Invoiced by Company'),
+    ('consolidated_margin', 'Consolidated Net Margin by Company & Site'),
+    ('shared_clients_distribution', 'Shared Clients Distribution'),
 ]
 
 OUTPUT_FORMAT = [
@@ -410,6 +415,111 @@ class BtpReportTemplate(models.Model):
         if not rows:
             rows = [[_('No sites.')]]
         return {'title': _('Net Margin & Article Consumption'), 'headers': headers, 'rows': rows}
+
+    # ---------- Module 13 — Multi-companies consolidation ----------
+
+    def _get_data_consolidated_turnover(self):
+        """Turnover (CA) by company and consolidated total (sale orders converted)."""
+        domain = [('state', 'in', ('sale', 'done'))]
+        if self.date_from:
+            domain.append(('date_order', '>=', self.date_from))
+        if self.date_to:
+            domain.append(('date_order', '<=', self.date_to))
+        if self.company_id:
+            domain.append(('company_id', '=', self.company_id.id))
+        orders = self.env['sale.order'].search(domain)
+        by_company = {}
+        for o in orders:
+            cid = o.company_id.id if o.company_id else 0
+            cname = o.company_id.name if o.company_id else _('No company')
+            if cid not in by_company:
+                by_company[cid] = {'name': cname, 'total': 0.0}
+            by_company[cid]['total'] += o.amount_total or 0
+        headers = [_('Company'), _('Turnover (HT)')]
+        rows = [[v['name'], '%.2f' % v['total']] for _, v in sorted(by_company.items(), key=lambda x: x[1]['name'])]
+        total = sum(v['total'] for v in by_company.values())
+        if rows:
+            rows.append([_('Total (consolidated)'), '%.2f' % total])
+        if not rows:
+            rows = [[_('No data for the selected period.')]]
+        return {'title': _('Consolidated Turnover by Company'), 'headers': headers, 'rows': rows}
+
+    def _get_data_consolidated_cash(self):
+        """Invoiced amounts by company (posted out_invoice) and consolidated total."""
+        domain = [
+            ('move_type', '=', 'out_invoice'),
+            ('state', '=', 'posted'),
+        ]
+        if self.date_from:
+            domain.append(('invoice_date', '>=', self.date_from))
+        if self.date_to:
+            domain.append(('invoice_date', '<=', self.date_to))
+        if self.company_id:
+            domain.append(('company_id', '=', self.company_id.id))
+        moves = self.env['account.move'].search(domain)
+        by_company = {}
+        for m in moves:
+            cid = m.company_id.id if m.company_id else 0
+            cname = m.company_id.name if m.company_id else _('No company')
+            if cid not in by_company:
+                by_company[cid] = {'name': cname, 'total': 0.0}
+            by_company[cid]['total'] += m.amount_total or 0
+        headers = [_('Company'), _('Invoiced Total (HT)')]
+        rows = [[v['name'], '%.2f' % v['total']] for _, v in sorted(by_company.items(), key=lambda x: x[1]['name'])]
+        total = sum(v['total'] for v in by_company.values())
+        if rows:
+            rows.append([_('Total (consolidated)'), '%.2f' % total])
+        if not rows:
+            rows = [[_('No invoices for the selected period.')]]
+        return {'title': _('Consolidated Cash / Invoiced by Company'), 'headers': headers, 'rows': rows}
+
+    def _get_data_consolidated_margin(self):
+        """Net margin by company and by site, with consolidated total."""
+        domain = [('btp_site_code', '!=', False)]
+        if self.company_id:
+            domain.append(('company_id', '=', self.company_id.id))
+        sites = self.env['project.project'].search(domain, order='company_id, btp_site_code')
+        by_company = {}
+        for s in sites:
+            cid = s.company_id.id if s.company_id else 0
+            cname = s.company_id.name if s.company_id else _('No company')
+            if cid not in by_company:
+                by_company[cid] = {'name': cname, 'sites': [], 'margin': 0.0}
+            by_company[cid]['sites'].append(s)
+            by_company[cid]['margin'] += s.btp_net_margin or 0
+        headers = [_('Company'), _('Site'), _('Net Margin'), _('Margin %')]
+        rows = []
+        grand_total = 0.0
+        for cid, v in sorted(by_company.items(), key=lambda x: x[1]['name']):
+            for site in v['sites']:
+                rows.append([
+                    v['name'],
+                    site.name or site.btp_site_code or '',
+                    '%.2f' % (site.btp_net_margin or 0),
+                    '%.1f' % (site.btp_margin_percent or 0),
+                ])
+            rows.append([v['name'], _('Subtotal'), '%.2f' % v['margin'], ''])
+            grand_total += v['margin']
+        if rows:
+            rows.append([_('Total (consolidated)'), '', '%.2f' % grand_total, ''])
+        if not rows:
+            rows = [[_('No sites.')]]
+        return {'title': _('Consolidated Net Margin by Company & Site'), 'headers': headers, 'rows': rows}
+
+    def _get_data_shared_clients_distribution(self):
+        """Distribution of shared clients: client name and list of companies sharing it."""
+        partners = self.env['res.partner'].search(
+            [('is_company', '=', True)],
+            order='name',
+        ).filtered(lambda p: p.btp_shared_company_ids)
+        headers = [_('Client'), _('Shared with companies')]
+        rows = []
+        for p in partners:
+            company_names = p.btp_shared_company_ids.mapped('name')
+            rows.append([p.name or _('Unnamed'), ', '.join(company_names) if company_names else ''])
+        if not rows:
+            rows = [[_('No shared clients.')]]
+        return {'title': _('Shared Clients Distribution'), 'headers': headers, 'rows': rows}
 
     def _render_pdf(self, data):
         """Generate PDF using QWeb report (template fetches data via doc._get_report_data())."""

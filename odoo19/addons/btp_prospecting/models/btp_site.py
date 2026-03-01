@@ -196,6 +196,22 @@ class ProjectProject(models.Model):
         store=True,
         help='Net margin as percentage of invoiced total.',
     )
+    # Module 13 — Multi-companies: mark when site relates to shared client
+    btp_is_shared = fields.Boolean(
+        string='Shared Client',
+        compute='_compute_btp_is_shared',
+        store=True,
+        help='True when the source quote/client is shared with other companies.',
+    )
+
+    @api.depends('btp_sale_order_id', 'btp_sale_order_id.partner_id', 'btp_sale_order_id.partner_id.btp_shared_company_ids')
+    def _compute_btp_is_shared(self):
+        for site in self:
+            site.btp_is_shared = bool(
+                site.btp_sale_order_id
+                and site.btp_sale_order_id.partner_id
+                and site.btp_sale_order_id.partner_id.btp_shared_company_ids
+            )
 
     @api.depends('btp_sale_order_id', 'btp_sale_order_id.amount_total',
                  'btp_invoice_ids', 'btp_invoice_ids.state', 'btp_invoice_ids.amount_total',

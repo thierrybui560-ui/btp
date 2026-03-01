@@ -179,11 +179,13 @@
         <field name="name">sale.order.tree.btp.quote</field>
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_quotation_tree"/>
+        <field name="priority">20</field>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='name']" position="after">
                 <field name="btp_quote_number" optional="show"/>
                 <field name="btp_revision_index" optional="hide"/>
                 <field name="btp_quote_status" optional="show"/>
+                <field name="btp_is_shared" optional="show" string="Shared client"/>
             </xpath>
         </field>
     </record>
@@ -193,6 +195,7 @@
         <field name="name">BTP Quotes</field>
         <field name="res_model">sale.order</field>
         <field name="view_mode">list,form,kanban</field>
+        <field name="view_id" ref="view_sale_order_tree_btp_quote"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create your first BTP quote!
