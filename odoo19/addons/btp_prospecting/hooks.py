@@ -4,14 +4,20 @@
 
 def pre_init_hook_res_company_btp(cr):
     """
-    Add Module 13 res.company columns before registry load so that
-    res.company can be read during upgrade (e.g. by base ir.module.module).
+    Add Module 13 res.company and Module 15 res.users columns before registry load
+    so that these models can be read during upgrade (e.g. by base ir.module.module).
     """
     cr.execute("""
         ALTER TABLE res_company ADD COLUMN IF NOT EXISTS btp_siren VARCHAR(9);
         ALTER TABLE res_company ADD COLUMN IF NOT EXISTS btp_shared_clients BOOLEAN DEFAULT FALSE;
         ALTER TABLE res_company ADD COLUMN IF NOT EXISTS btp_shared_suppliers BOOLEAN DEFAULT FALSE;
         ALTER TABLE res_company ADD COLUMN IF NOT EXISTS btp_shared_articles BOOLEAN DEFAULT FALSE;
+    """)
+    # Module 15 — res.users: temporary rights and dates
+    cr.execute("""
+        ALTER TABLE res_users ADD COLUMN IF NOT EXISTS btp_temporary_rights BOOLEAN DEFAULT FALSE;
+        ALTER TABLE res_users ADD COLUMN IF NOT EXISTS btp_temporary_rights_date_start DATE;
+        ALTER TABLE res_users ADD COLUMN IF NOT EXISTS btp_temporary_rights_date_end DATE;
     """)
 
 

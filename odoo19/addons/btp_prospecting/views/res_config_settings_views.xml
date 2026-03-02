@@ -21,6 +21,18 @@
                             <field name="btp_document_expiration_days"/>
                         </setting>
                     </block>
+                    <block title="System Governance (Module 15)" name="btp_governance_settings">
+                        <setting id="btp_automatic_reattribution_setting"
+                                 string="Enable automatic client reattribution"
+                                 help="When enabled, clients with no activity for the configured number of days are reattributed to the salesperson's manager.">
+                            <field name="btp_automatic_reattribution_enabled"/>
+                        </setting>
+                        <setting id="btp_reattribution_inactive_days_setting"
+                                 string="Inactive client reattribution (days)"
+                                 help="After this many days without activity, clients are reattributed to the manager (if automatic reattribution is enabled).">
+                            <field name="btp_reattribution_inactive_days" invisible="not btp_automatic_reattribution_enabled"/>
+                        </setting>
+                    </block>
                 </app>
             </xpath>
         </field>

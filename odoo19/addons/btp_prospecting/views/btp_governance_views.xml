@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Module 15 — System Governance: Audit Log -->
+    <record id="view_btp_audit_log_tree" model="ir.ui.view">
+        <field name="name">btp.audit.log.tree</field>
+        <field name="model">btp.audit.log</field>
+        <field name="arch" type="xml">
+            <list string="Audit Log" create="false" edit="false" delete="false" default_order="create_date desc, id desc">
+                <field name="create_date"/>
+                <field name="user_id"/>
+                <field name="action"/>
+                <field name="model_name"/>
+                <field name="res_id"/>
+                <field name="reason"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_btp_audit_log_form" model="ir.ui.view">
+        <field name="name">btp.audit.log.form</field>
+        <field name="model">btp.audit.log</field>
+        <field name="arch" type="xml">
+            <form string="Audit Log" create="false" edit="false" delete="false">
+                <sheet>
+                    <group>
+                        <field name="create_date" readonly="1"/>
+                        <field name="user_id" readonly="1"/>
+                        <field name="action" readonly="1"/>
+                        <field name="model_name" readonly="1"/>
+                        <field name="res_id" readonly="1"/>
+                    </group>
+                    <group>
+                        <field name="reason" readonly="1" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_btp_audit_log_search" model="ir.ui.view">
+        <field name="name">btp.audit.log.search</field>
+        <field name="model">btp.audit.log</field>
+        <field name="arch" type="xml">
+            <search string="Audit Log">
+                <field name="user_id"/>
+                <field name="action"/>
+                <field name="model_name"/>
+                <filter string="Reattributions" name="reattribution" domain="[('action', '=', 'reattribution')]"/>
+                <filter string="Force Duplicate" name="force_duplicate" domain="[('action', '=', 'force_duplicate')]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Module 15 — Reattributions (standalone for Governance menu) -->
+    <record id="view_btp_company_reattribution_tree" model="ir.ui.view">
+        <field name="name">btp.company.reattribution.tree.governance</field>
+        <field name="model">btp.company.reattribution</field>
+        <field name="arch" type="xml">
+            <list string="Reattributions" create="false" default_order="change_date desc, id desc">
+                <field name="change_date"/>
+                <field name="partner_id"/>
+                <field name="old_user_id"/>
+                <field name="new_user_id"/>
+                <field name="changed_by_id"/>
+                <field name="reason"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_btp_company_reattribution_form_governance" model="ir.ui.view">
+        <field name="name">btp.company.reattribution.form.governance</field>
+        <field name="model">btp.company.reattribution</field>
+        <field name="arch" type="xml">
+            <form string="Reattribution" create="false" edit="false" delete="false">
+                <sheet>
+                    <group>
+                        <field name="change_date" readonly="1"/>
+                        <field name="partner_id" readonly="1"/>
+                        <field name="old_user_id" readonly="1"/>
+                        <field name="new_user_id" readonly="1"/>
+                        <field name="changed_by_id" readonly="1"/>
+                    </group>
+                    <group>
+                        <field name="reason" readonly="1" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_btp_audit_log" model="ir.actions.act_window">
+        <field name="name">Audit Log</field>
+        <field name="res_model">btp.audit.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_btp_audit_log_search"/>
+        <field name="context">{'create': False, 'edit': False, 'delete': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No audit entries yet.</p>
+            <p>Creation, updates, deletions and reattributions are logged here for governance.</p>
+        </field>
+    </record>
+
+    <record id="action_btp_reattribution_governance" model="ir.actions.act_window">
+        <field name="name">Client Reattributions</field>
+        <field name="res_model">btp.company.reattribution</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'create': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No reattributions recorded.</p>
+            <p>Client/contact reattributions (change of assigned salesperson) are listed here with reason.</p>
+        </field>
+    </record>
+
+    <record id="action_btp_governance_reports" model="ir.actions.act_window">
+        <field name="name">Governance Reports</field>
+        <field name="res_model">btp.report.template</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('scope', 'in', ['data_quality', 'governance_reattributions'])]</field>
+        <field name="search_view_id" ref="view_btp_report_template_search"/>
+        <field name="context">{'default_scope': 'data_quality'}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create a governance report template.</p>
+            <p>Data Quality: duplicate counts, documentary conformity. Reattributions: client reattribution history.</p>
+        </field>
+    </record>
+</odoo>

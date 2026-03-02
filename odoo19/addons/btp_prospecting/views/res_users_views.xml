@@ -12,6 +12,12 @@
                     <field name="btp_is_unavailable"/>
                     <field name="btp_is_overloaded"/>
                 </group>
+                <group string="System Governance (Module 15)">
+                    <field name="btp_hierarchy_level" readonly="1"/>
+                    <field name="btp_temporary_rights"/>
+                    <field name="btp_temporary_rights_date_start" invisible="not btp_temporary_rights"/>
+                    <field name="btp_temporary_rights_date_end" invisible="not btp_temporary_rights"/>
+                </group>
             </xpath>
         </field>
     </record>

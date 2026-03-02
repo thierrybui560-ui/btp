@@ -45,6 +45,34 @@
               sequence="20"
               groups="btp_prospecting.group_btp_manager"/>
 
+    <!-- Module 15 — System Governance -->
+    <menuitem id="menu_btp_governance"
+              name="Governance"
+              parent="menu_btp_prospecting_root"
+              sequence="84"
+              groups="btp_prospecting.group_btp_manager"/>
+
+    <menuitem id="menu_btp_audit_log"
+              name="Audit Log"
+              parent="menu_btp_governance"
+              action="action_btp_audit_log"
+              sequence="10"
+              groups="btp_prospecting.group_btp_manager"/>
+
+    <menuitem id="menu_btp_reattributions_governance"
+              name="Client Reattributions"
+              parent="menu_btp_governance"
+              action="action_btp_reattribution_governance"
+              sequence="20"
+              groups="btp_prospecting.group_btp_manager"/>
+
+    <menuitem id="menu_btp_governance_reports"
+              name="Governance Reports"
+              parent="menu_btp_governance"
+              action="action_btp_governance_reports"
+              sequence="30"
+              groups="btp_prospecting.group_btp_manager"/>
+
     <!-- Configuration Menu -->
     <menuitem id="menu_btp_configuration"
               name="Configuration"

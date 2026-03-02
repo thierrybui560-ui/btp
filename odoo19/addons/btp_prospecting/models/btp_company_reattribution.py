@@ -18,4 +18,5 @@ class BtpCompanyReattribution(models.Model):
     new_user_id = fields.Many2one('res.users', string='New Salesperson')
     changed_by_id = fields.Many2one('res.users', string='Changed By', required=True)
     change_date = fields.Datetime(string='Change Date', default=fields.Datetime.now, required=True)
+    reason = fields.Text(string='Reason', help='Reason for reattribution (who, when, why).')
 

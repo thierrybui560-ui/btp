@@ -20,6 +20,7 @@ from . import btp_site_pointing
 from . import btp_site_consumption
 from . import btp_company_commercial_condition
 from . import btp_company_reattribution
+from . import btp_audit_log
 # Module 3 - Quotes & Articles
 from . import btp_article_family
 from . import btp_article_document

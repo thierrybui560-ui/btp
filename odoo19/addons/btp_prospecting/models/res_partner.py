@@ -4,6 +4,7 @@ from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
 import logging
 import re
+from datetime import datetime, timedelta
 
 _logger = logging.getLogger(__name__)
 
@@ -534,6 +535,13 @@ class ResPartner(models.Model):
                                 'New: %s (ID %s)'
                             ) % (duplicate.display_name, duplicate.id, partner.display_name, partner.id),
                         )
+                    self.env['btp.audit.log'].sudo().log(
+                        'force_duplicate',
+                        model_name='res.partner',
+                        res_id=partner.id,
+                        reason=_('Force duplicate contact: %s (ID %s); original %s (ID %s). N+1 notified.')
+                        % (partner.display_name, partner.id, duplicate.display_name, duplicate.id),
+                    )
         return partners
 
     def _recompute_contact_duplicate_flags(self):
@@ -557,19 +565,17 @@ class ResPartner(models.Model):
         if self.env.context.get('skip_career_update'):
             return super(ResPartner, self).write(vals)
 
-        # Capture reattribution changes
-        reassignments = []
+        # Snapshot old salesperson for companies/contacts before write (for reattribution after write)
+        reattribution_candidates = []  # (partner_id, old_user_id, is_company)
         for partner in self:
-            if partner.is_company and 'btp_assigned_salesperson_id' in vals:
-                old_user = partner.btp_assigned_salesperson_id
-                new_user = self.env['res.users'].browse(vals.get('btp_assigned_salesperson_id')) if vals.get('btp_assigned_salesperson_id') else False
-                if old_user != new_user:
-                    reassignments.append((partner, old_user, new_user))
-            if not partner.is_company and 'btp_contact_assigned_salesperson_id' in vals:
-                old_user = partner.btp_contact_assigned_salesperson_id
-                new_user = self.env['res.users'].browse(vals.get('btp_contact_assigned_salesperson_id')) if vals.get('btp_contact_assigned_salesperson_id') else False
-                if old_user != new_user:
-                    reassignments.append((partner, old_user, new_user))
+            is_company = getattr(partner, 'is_company', False) or getattr(partner, 'company_type', None) == 'company'
+            if is_company and 'btp_assigned_salesperson_id' in vals:
+                old_id = partner.btp_assigned_salesperson_id.id if partner.btp_assigned_salesperson_id else None
+                reattribution_candidates.append((partner.id, old_id, True))
+            if not is_company and 'btp_contact_assigned_salesperson_id' in vals:
+                old_id = partner.btp_contact_assigned_salesperson_id.id if partner.btp_contact_assigned_salesperson_id else None
+                reattribution_candidates.append((partner.id, old_id, False))
+
         # Handle contact company change (career history update)
         # Note: parent_id is the contact's company in res.partner
         for record in self:
@@ -582,13 +588,49 @@ class ResPartner(models.Model):
         
         result = super(ResPartner, self).write(vals)
 
-        if reassignments:
-            for partner, old_user, new_user in reassignments:
+        # Create reattribution and audit log when salesperson actually changed (after write)
+        if reattribution_candidates:
+            _logger.info(
+                'BTP reattribution check: %s candidate(s) after write',
+                len(reattribution_candidates),
+            )
+            reason = self.env.context.get('btp_reattribution_reason', '')
+            AuditLog = self.env['btp.audit.log'].sudo()
+            User = self.env['res.users']
+            for partner_id, old_user_id, is_company in reattribution_candidates:
+                partner = self.browse(partner_id)
+                if not partner.exists():
+                    continue
+                if is_company:
+                    new_user = partner.btp_assigned_salesperson_id
+                else:
+                    new_user = partner.btp_contact_assigned_salesperson_id
+                new_user_id = new_user.id if new_user else None
+                if old_user_id == new_user_id:
+                    _logger.info(
+                        'BTP reattribution skip: partner %s unchanged (old=%s new=%s)',
+                        partner_id, old_user_id, new_user_id,
+                    )
+                    continue
+                old_user = User.browse(old_user_id) if old_user_id else self.env['res.users']
                 self.env['btp.company.reattribution'].sudo().create({
-                    'partner_id': partner.id,
-                    'old_user_id': old_user.id if old_user else False,
+                    'partner_id': partner_id,
+                    'old_user_id': old_user_id or False,
                     'new_user_id': new_user.id if new_user else False,
                     'changed_by_id': self.env.user.id,
+                    'reason': reason,
+                })
+                reason_text = _('Client reattribution: %s → %s. %s') % (
+                    old_user.name if old_user else _('Unassigned'),
+                    new_user.name if new_user else _('Unassigned'),
+                    reason or _('No reason provided'),
+                )
+                AuditLog.create({
+                    'user_id': self.env.user.id,
+                    'action': 'reattribution',
+                    'model_name': 'res.partner',
+                    'res_id': partner_id,
+                    'reason': reason_text,
                 })
 
         if not self.env.context.get('skip_duplicate_recompute'):
@@ -698,4 +740,36 @@ class ResPartner(models.Model):
                     'sticky': False,
                 }
             }
+
+    # Module 15 — System Governance: automatic reattribution of inactive clients
+    @api.model
+    def _cron_reattribute_inactive_clients(self):
+        """Reassign companies with no activity for N days to the salesperson's manager."""
+        ICP = self.env['ir.config_parameter'].sudo()
+        if not ICP.get_param('btp_prospecting.btp_automatic_reattribution_enabled', 'False') == 'True':
+            return 0
+        try:
+            days = int(ICP.get_param('btp_prospecting.btp_reattribution_inactive_days', 30))
+        except (TypeError, ValueError):
+            days = 30
+        threshold = datetime.now() - timedelta(days=days)
+        threshold_str = threshold.strftime('%Y-%m-%d %H:%M:%S')
+        domain = [
+            ('is_company', '=', True),
+            ('btp_assigned_salesperson_id', '!=', False),
+            ('write_date', '<', threshold_str),
+        ]
+        partners = self.sudo().search(domain)
+        reattributed = 0
+        for partner in partners:
+            user = partner.btp_assigned_salesperson_id
+            if not user.manager_id:
+                continue
+            partner.with_context(
+                btp_reattribution_reason=_('Automatic reattribution: no activity for %s days.') % days,
+            ).sudo().write({'btp_assigned_salesperson_id': user.manager_id.id})
+            reattributed += 1
+        if reattributed:
+            _logger.info('BTP automatic reattribution: %s client(s) reattributed to manager.', reattributed)
+        return reattributed
 

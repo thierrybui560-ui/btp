@@ -22,6 +22,9 @@ REPORT_SCOPE = [
     ('consolidated_cash', 'Consolidated Cash / Invoiced by Company'),
     ('consolidated_margin', 'Consolidated Net Margin by Company & Site'),
     ('shared_clients_distribution', 'Shared Clients Distribution'),
+    # Module 15 — System Governance
+    ('data_quality', 'Data Quality (duplicates, documentary conformity)'),
+    ('governance_reattributions', 'Governance: Reattributions'),
 ]
 
 OUTPUT_FORMAT = [
@@ -520,6 +523,62 @@ class BtpReportTemplate(models.Model):
         if not rows:
             rows = [[_('No shared clients.')]]
         return {'title': _('Shared Clients Distribution'), 'headers': headers, 'rows': rows}
+
+    def _get_data_data_quality(self):
+        """Module 15: Data quality KPIs — duplicates detected, documentary conformity."""
+        Partner = self.env['res.partner']
+        # Potential duplicate contacts
+        dup_contacts = Partner.search_count([
+            ('is_company', '=', False),
+            ('btp_duplicate_warning', '=', True),
+        ])
+        # Suppliers/subcontractors with expired docs
+        expired_suppliers = Partner.search_count([
+            ('is_company', '=', True),
+            ('btp_conformity_status', '=', 'expired'),
+        ])
+        # Total suppliers/subcontractors with documents (for conformity rate)
+        with_docs = Partner.search([
+            ('is_company', '=', True),
+            ('is_supplier', '=', True),
+            '|', ('is_subcontractor', '=', True), ('is_supplier', '=', True),
+        ])
+        with_docs = with_docs.filtered(lambda p: p.btp_supplier_document_ids)
+        total = len(with_docs)
+        conform = total - len(with_docs.filtered(lambda p: p.btp_conformity_status == 'expired'))
+        rate = (100.0 * conform / total) if total else 100.0
+        headers = [_('Indicator'), _('Value')]
+        rows = [
+            [_('Potential duplicate contacts'), str(dup_contacts)],
+            [_('Suppliers with expired documents'), str(expired_suppliers)],
+            [_('Documentary conformity rate (%)'), '%.1f' % rate],
+        ]
+        return {'title': _('Data Quality'), 'headers': headers, 'rows': rows}
+
+    def _get_data_governance_reattributions(self):
+        """Module 15: List of client/contact reattributions (who, when, why)."""
+        domain = []
+        if self.date_from:
+            domain.append(('change_date', '>=', self.date_from))
+        if self.date_to:
+            domain.append(('change_date', '<=', self.date_to))
+        reattributions = self.env['btp.company.reattribution'].search(
+            domain, order='change_date desc', limit=500
+        )
+        headers = [_('Date'), _('Partner'), _('From'), _('To'), _('By'), _('Reason')]
+        rows = []
+        for r in reattributions:
+            rows.append([
+                r.change_date.strftime('%Y-%m-%d %H:%M') if r.change_date else '',
+                r.partner_id.name or '',
+                r.old_user_id.name or _('Unassigned'),
+                r.new_user_id.name or _('Unassigned'),
+                r.changed_by_id.name or '',
+                (r.reason or '')[:80],
+            ])
+        if not rows:
+            rows = [[_('No reattributions in the selected period.')]]
+        return {'title': _('Reattributions'), 'headers': headers, 'rows': rows}
 
     def _render_pdf(self, data):
         """Generate PDF using QWeb report (template fetches data via doc._get_report_data())."""

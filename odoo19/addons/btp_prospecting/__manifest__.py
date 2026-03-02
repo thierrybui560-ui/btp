@@ -74,6 +74,7 @@ Module 9 - Stocks &amp; Logistics:
 * Module 11 - Reports &amp; Exports: configurable report templates (by lot, site, client, salesperson, article, supplier, QHSE); PDF/Excel/CSV; scheduled sending by email; export history
 * Module 13 - Multi-companies: company selection and switching; strict data separation; shared clients/suppliers/articles and commercial conditions per company; shared leads; consolidated reports (turnover, cash, margin, shared clients distribution)
 * Module 14 - Mobile (optional): JSON API for PWA and native apps (leads, partners, quotes, sites, pointing, yield, QHSE incidents, tasks, dashboard, notifications); use Odoo PWA for mobile web access
+* Module 15 - Synthesis &amp; System Governance: hierarchical access (N/N-1/N-2/Management), audit log (who, when, why), reattribution with reason, temporary rights; anti-duplicate (clients, suppliers SIREN, leads); automatic reattribution of inactive clients; governance reports (data quality, reattributions); consolidated management views
     """,
     'author': 'BTP Solutions',
     'website': 'https://www.example.com',
@@ -99,6 +100,7 @@ Module 9 - Stocks &amp; Logistics:
     'data': [
         'security/btp_prospecting_security.xml',
         'security/ir.model.access.csv',
+        'security/btp_audit_log_access.xml',
         'data/btp_lead_stage_data.xml',
         'data/btp_lead_reminder_cron.xml',
         'data/btp_document_expiration_cron.xml',
@@ -146,6 +148,7 @@ Module 9 - Stocks &amp; Logistics:
         'views/btp_call_report_views.xml',
         'views/btp_calendar_views.xml',
         'views/btp_multi_company_views.xml',
+        'views/btp_governance_views.xml',
         'views/btp_prospecting_menus.xml',
         'reports/btp_lead_reports.xml',
         'reports/btp_lead_templates.xml',
@@ -153,6 +156,7 @@ Module 9 - Stocks &amp; Logistics:
         'reports/btp_report_generic_templates.xml',
         'data/btp_report_schedule_cron.xml',
         'data/btp_activity_escalation_cron.xml',
+        'data/btp_reattribution_cron.xml',
     ],
     'demo': [
         'demo/btp_lead_demo.xml',

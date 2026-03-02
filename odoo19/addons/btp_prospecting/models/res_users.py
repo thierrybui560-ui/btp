@@ -45,7 +45,35 @@ class ResUsers(models.Model):
         compute='_compute_all_subordinates',
         help='All subordinates (recursive)'
     )
-    
+
+    # Module 15 — System Governance: hierarchy level and temporary rights
+    btp_hierarchy_level = fields.Selection([
+        ('base', 'N (Base)'),
+        ('n2', 'N-2'),
+        ('n1', 'N-1'),
+        ('management', 'Management'),
+    ], string='Hierarchy Level', compute='_compute_btp_hierarchy_level', store=False,
+       help='Pyramidal level: Management = full access; N-1 = direct subordinates; N-2 = reports to N-1; N = base.')
+    btp_temporary_rights = fields.Boolean(
+        string='Temporary Rights',
+        default=False,
+        help='Replacement or interim: rights valid only between the dates below.',
+    )
+    btp_temporary_rights_date_start = fields.Date(string='Temporary Rights From')
+    btp_temporary_rights_date_end = fields.Date(string='Temporary Rights To')
+
+    @api.depends('subordinate_ids', 'manager_id')
+    def _compute_btp_hierarchy_level(self):
+        for user in self:
+            if user.has_group('btp_prospecting.group_btp_admin') or user.has_group('btp_prospecting.group_btp_manager'):
+                user.btp_hierarchy_level = 'management'
+            elif user.subordinate_ids:
+                user.btp_hierarchy_level = 'n1'
+            elif user.manager_id:
+                user.btp_hierarchy_level = 'n2'
+            else:
+                user.btp_hierarchy_level = 'base'
+
     @api.depends('subordinate_ids')
     def _compute_all_subordinates(self):
         for user in self:

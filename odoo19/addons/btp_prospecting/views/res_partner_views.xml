@@ -123,6 +123,7 @@
                             <field name="new_user_id"/>
                             <field name="changed_by_id"/>
                             <field name="change_date"/>
+                            <field name="reason"/>
                         </list>
                     </field>
                 </page>
