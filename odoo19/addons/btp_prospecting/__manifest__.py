@@ -73,6 +73,7 @@ Module 9 - Stocks &amp; Logistics:
 * Module 10 - Quality &amp; Safety (QHSE): QHSE incidents and corrective actions per site; documents (PPSPS, DOE, certificates) via Site Documents
 * Module 11 - Reports &amp; Exports: configurable report templates (by lot, site, client, salesperson, article, supplier, QHSE); PDF/Excel/CSV; scheduled sending by email; export history
 * Module 13 - Multi-companies: company selection and switching; strict data separation; shared clients/suppliers/articles and commercial conditions per company; shared leads; consolidated reports (turnover, cash, margin, shared clients distribution)
+* Module 14 - Mobile (optional): JSON API for PWA and native apps (leads, partners, quotes, sites, pointing, yield, QHSE incidents, tasks, dashboard, notifications); use Odoo PWA for mobile web access
     """,
     'author': 'BTP Solutions',
     'website': 'https://www.example.com',
