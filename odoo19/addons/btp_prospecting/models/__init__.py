@@ -55,4 +55,12 @@ from . import btp_export_job
 from . import btp_call_report
 from . import calendar_event
 from . import mail_activity
+from . import btp_ai_provider
+from . import btp_prompt_template
+from . import btp_ai_log
+from . import btp_lead_score_log
+from . import btp_tender_source
+from . import btp_tender_watch
+from . import btp_rag_document
+from . import btp_rag_chunk
 

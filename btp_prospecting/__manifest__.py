@@ -56,7 +56,7 @@ Key Features:
             'btp_prospecting/static/src/scss/btp_prospecting.scss',
         ],
     },
-    'installable': True,
+    'installable': False,
     'application': True,
     'auto_install': False,
 }

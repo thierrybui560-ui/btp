@@ -220,9 +220,15 @@ class SaleOrder(models.Model):
         return orders
 
     def action_confirm(self):
+        self._btp_validate_subcontractor_documents()
         result = super().action_confirm()
         for order in self:
             order._btp_ensure_site()
+            if order.btp_site_id and order.btp_site_id.btp_is_blocked:
+                raise UserError(_(
+                    'Site "%s" is blocked because mandatory documents are missing or expired. '
+                    'Please resolve document checklist issues before confirming commercial operations.'
+                ) % order.btp_site_id.display_name)
         return result
 
     def _btp_ensure_site(self):
@@ -326,21 +332,6 @@ class SaleOrder(models.Model):
             'state': 'draft',
         })
         
-        # Copy lots structure
-        for lot in self.btp_lot_ids:
-            new_lot = lot.copy({'quote_id': revision.id})
-            for title in lot.title_ids:
-                new_title = title.copy({'lot_id': new_lot.id})
-                for subtitle in title.subtitle_ids:
-                    new_subtitle = subtitle.copy({'title_id': new_title.id})
-                    for item in subtitle.item_ids:
-                        new_item = item.copy({'subtitle_id': new_subtitle.id})
-                        # Copy articles and labor
-                        for article in item.article_ids:
-                            article.copy({'item_id': new_item.id})
-                        for labor in item.labor_ids:
-                            labor.copy({'item_id': new_item.id})
-        
         return {
             'type': 'ir.actions.act_window',
             'name': _('Quote Revision'),
@@ -354,6 +345,7 @@ class SaleOrder(models.Model):
         """Send quote to client"""
         if self.btp_quote_status != 'draft':
             raise UserError(_('Only draft quotes can be sent.'))
+        self._btp_validate_subcontractor_documents()
         
         # Validate quote structure
         if not self.btp_lot_ids:
@@ -385,6 +377,21 @@ class SaleOrder(models.Model):
         })
 
         return action
+
+    def _btp_validate_subcontractor_documents(self):
+        """Block quote send/confirm when subcontractor compliance docs are invalid."""
+        subcontractors = self.env['res.partner']
+        for order in self:
+            for lot in order.btp_lot_ids:
+                for title in lot.title_ids:
+                    for subtitle in title.subtitle_ids:
+                        for item in subtitle.item_ids:
+                            for labor in item.labor_ids.filtered(
+                                lambda l: l.labor_type == 'subcontracting' and l.subcontractor_id
+                            ):
+                                subcontractors |= labor.subcontractor_id
+        if subcontractors:
+            subcontractors._btp_validate_subcontractor_documents_or_raise()
 
     def _cron_quote_followup(self):
         """Send follow-up reminders for quotes that need follow-up."""

@@ -16,6 +16,17 @@ class BtpSitePointing(models.Model):
     subcontractor_id = fields.Many2one('res.partner', string='Subcontractor', ondelete='cascade', index=True,
         domain="[('is_company', '=', True), ('is_subcontractor', '=', True)]")
     hours = fields.Float(string='Hours', digits=(16, 2), default=0.0)
+    hourly_rate = fields.Float(
+        string='Hourly Rate',
+        digits='Product Price',
+        help='Optional hourly cost override used for margin computation.',
+    )
+    labor_cost = fields.Float(
+        string='Labor Cost',
+        digits='Product Price',
+        compute='_compute_labor_cost',
+        store=True,
+    )
     qty_done = fields.Float(string='Quantity Done', digits='Product Unit of Measure', default=0.0)
     uom_id = fields.Many2one('uom.uom', string='Unit')
     notes = fields.Text(string='Notes')
@@ -27,3 +38,23 @@ class BtpSitePointing(models.Model):
                 raise ValidationError(_('Please set either Employee or Subcontractor.'))
             if r.user_id and r.subcontractor_id:
                 raise ValidationError(_('Set either Employee or Subcontractor, not both.'))
+
+    @api.depends('hours', 'hourly_rate', 'user_id', 'subcontractor_id')
+    def _compute_labor_cost(self):
+        ICP = self.env['ir.config_parameter'].sudo()
+        try:
+            default_internal = float(ICP.get_param('btp_prospecting.btp_default_internal_hourly_cost', 0.0))
+        except (TypeError, ValueError):
+            default_internal = 0.0
+        try:
+            default_subcontractor = float(ICP.get_param('btp_prospecting.btp_default_subcontractor_hourly_cost', 0.0))
+        except (TypeError, ValueError):
+            default_subcontractor = 0.0
+        for rec in self:
+            if rec.hourly_rate:
+                rate = rec.hourly_rate
+            elif rec.subcontractor_id:
+                rate = default_subcontractor
+            else:
+                rate = default_internal
+            rec.labor_cost = (rec.hours or 0.0) * rate

@@ -5,7 +5,7 @@
         <field name="name">btp.report.template.list</field>
         <field name="model">btp.report.template</field>
         <field name="arch" type="xml">
-            <list string="Report Templates" default_order="name">
+            <list string="Report Templates" class="btp_dense_table" default_order="name">
                 <field name="name"/>
                 <field name="scope"/>
                 <field name="output_format"/>
@@ -50,16 +50,23 @@
                         </group>
                     </group>
                     <group string="Email Recipients" colspan="2">
-                        <field name="recipient_user_ids" widget="many2many_tags" nolabel="1" colspan="2"/>
+                        <field name="recipient_user_ids"
+                               widget="many2many_tags"
+                               nolabel="1"
+                               colspan="2"
+                               domain="[('share', '=', False), '|', ('company_ids', '=', False), ('company_ids', 'in', [company_id])]"/>
                     </group>
                     <notebook>
                         <page string="Export History" name="exports">
                             <field name="export_job_ids" nolabel="1" readonly="1">
-                                <list create="0" delete="0" edit="0">
+                                <list class="btp_dense_table" create="0" delete="0" edit="0"
+                                      decoration-success="state == 'done'"
+                                      decoration-warning="state == 'pending'"
+                                      decoration-danger="state == 'failed'">
                                     <field name="run_date"/>
-                                    <field name="state"/>
+                                    <field name="state" widget="badge"/>
                                     <field name="attachment_id"/>
-                                    <field name="error_message"/>
+                                    <field name="error_message" optional="hide"/>
                                     <button name="action_download" type="object" string="Download" icon="fa-download" invisible="state != 'done'"/>
                                 </list>
                             </field>
@@ -101,12 +108,15 @@
         <field name="name">btp.export.job.list</field>
         <field name="model">btp.export.job</field>
         <field name="arch" type="xml">
-            <list string="Export History" default_order="run_date desc">
+            <list string="Export History" class="btp_dense_table" default_order="run_date desc"
+                  decoration-success="state == 'done'"
+                  decoration-warning="state == 'pending'"
+                  decoration-danger="state == 'failed'">
                 <field name="report_template_id"/>
                 <field name="run_date"/>
-                <field name="state"/>
+                <field name="state" widget="badge"/>
                 <field name="attachment_id"/>
-                <field name="error_message"/>
+                <field name="error_message" optional="hide"/>
                 <button name="action_download" type="object" string="Download" icon="fa-download" invisible="state != 'done'"/>
             </list>
         </field>

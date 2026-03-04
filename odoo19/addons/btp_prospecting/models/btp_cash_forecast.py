@@ -147,7 +147,7 @@ class BtpCashForecast(models.TransientModel):
             'type': 'ir.actions.act_window',
             'res_model': 'btp.cash.forecast.line',
             'name': _('Cash Forecast'),
-            'view_mode': 'list',
+            'view_mode': 'graph,pivot,list',
             'domain': [('forecast_id', '=', self.id)],
             'context': {'create': False, 'edit': False},
         }

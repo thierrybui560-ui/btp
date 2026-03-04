@@ -136,4 +136,20 @@ access_btp_call_report_admin,btp.call.report.admin,model_btp_call_report,group_b
 access_btp_call_report_action_salesperson,btp.call.report.action.salesperson,model_btp_call_report_action,group_btp_salesperson,1,1,1,0
 access_btp_call_report_action_manager,btp.call.report.action.manager,model_btp_call_report_action,group_btp_manager,1,1,1,1
 access_btp_call_report_action_admin,btp.call.report.action.admin,model_btp_call_report_action,group_btp_admin,1,1,1,1
+access_btp_ai_provider_manager,btp.ai.provider.manager,model_btp_ai_provider,group_btp_manager,1,1,1,1
+access_btp_ai_provider_admin,btp.ai.provider.admin,model_btp_ai_provider,group_btp_admin,1,1,1,1
+access_btp_prompt_template_manager,btp.prompt.template.manager,model_btp_prompt_template,group_btp_manager,1,1,1,1
+access_btp_prompt_template_admin,btp.prompt.template.admin,model_btp_prompt_template,group_btp_admin,1,1,1,1
+access_btp_ai_log_manager,btp.ai.log.manager,model_btp_ai_log,group_btp_manager,1,0,0,0
+access_btp_ai_log_admin,btp.ai.log.admin,model_btp_ai_log,group_btp_admin,1,1,1,1
+access_btp_lead_score_log_manager,btp.lead.score.log.manager,model_btp_lead_score_log,group_btp_manager,1,0,0,0
+access_btp_lead_score_log_admin,btp.lead.score.log.admin,model_btp_lead_score_log,group_btp_admin,1,1,1,1
+access_btp_tender_source_manager,btp.tender.source.manager,model_btp_tender_source,group_btp_manager,1,1,1,1
+access_btp_tender_source_admin,btp.tender.source.admin,model_btp_tender_source,group_btp_admin,1,1,1,1
+access_btp_tender_watch_run_manager,btp.tender.watch.run.manager,model_btp_tender_watch_run,group_btp_manager,1,0,0,0
+access_btp_tender_watch_run_admin,btp.tender.watch.run.admin,model_btp_tender_watch_run,group_btp_admin,1,1,1,1
+access_btp_rag_document_manager,btp.rag.document.manager,model_btp_rag_document,group_btp_manager,1,1,1,1
+access_btp_rag_document_admin,btp.rag.document.admin,model_btp_rag_document,group_btp_admin,1,1,1,1
+access_btp_rag_chunk_manager,btp.rag.chunk.manager,model_btp_rag_chunk,group_btp_manager,1,1,1,1
+access_btp_rag_chunk_admin,btp.rag.chunk.admin,model_btp_rag_chunk,group_btp_admin,1,1,1,1
 

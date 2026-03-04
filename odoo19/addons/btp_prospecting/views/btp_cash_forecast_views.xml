@@ -40,6 +40,32 @@
             </list>
         </field>
     </record>
+    <record id="view_btp_cash_forecast_line_pivot" model="ir.ui.view">
+        <field name="name">btp.cash.forecast.line.pivot</field>
+        <field name="model">btp.cash.forecast.line</field>
+        <field name="arch" type="xml">
+            <pivot string="Cash Forecast KPI">
+                <field name="period_label" type="row"/>
+                <field name="company_id" type="row"/>
+                <field name="amount_in" type="measure"/>
+                <field name="amount_out" type="measure"/>
+                <field name="balance" type="measure"/>
+                <field name="cumulative_balance" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+    <record id="view_btp_cash_forecast_line_graph" model="ir.ui.view">
+        <field name="name">btp.cash.forecast.line.graph</field>
+        <field name="model">btp.cash.forecast.line</field>
+        <field name="arch" type="xml">
+            <graph string="Cash Forecast KPI" type="line">
+                <field name="date"/>
+                <field name="amount_in" type="measure"/>
+                <field name="amount_out" type="measure"/>
+                <field name="cumulative_balance" type="measure"/>
+            </graph>
+        </field>
+    </record>
     <record id="action_btp_cash_forecast" model="ir.actions.act_window">
         <field name="name">Cash Forecast</field>
         <field name="res_model">btp.cash.forecast</field>

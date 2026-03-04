@@ -184,6 +184,24 @@ class BtpLead(models.Model):
         store=True,
         help='Expected revenue based on budget and probability'
     )
+    ai_score = fields.Float(
+        string='AI Score',
+        digits=(12, 2),
+        tracking=True,
+        help='Heuristic AI score (0-100) based on fit, intent, and freshness.',
+    )
+    ai_score_reason = fields.Text(
+        string='AI Score Reason',
+        help='Human-readable explanation of how AI score was computed.',
+    )
+    ai_last_scored_at = fields.Datetime(
+        string='Last AI Scored At',
+        readonly=True,
+    )
+    ai_briefing = fields.Text(
+        string='AI Briefing',
+        help='Short AI-generated commercial briefing summary.',
+    )
     competitor_ids = fields.Many2many(
         'res.partner',
         'btp_lead_competitor_rel',
@@ -1056,8 +1074,12 @@ class BtpLead(models.Model):
         leads = self.search([
             ('active', '=', True),
             ('stage_id.is_lost', '=', True),
-            ('converted_date', '<=', six_months_ago),
             ('response_status', 'in', ['lost', 'not_interested', 'no_need_now']),
+            '|',
+            ('converted_date', '<=', six_months_ago),
+            '&',
+            ('converted_date', '=', False),
+            ('write_date', '<=', six_months_ago),
         ])
         
         for lead in leads:
@@ -1088,6 +1110,124 @@ class BtpLead(models.Model):
         template = self.env.ref('btp_prospecting.email_template_lead_loop_reminder', raise_if_not_found=False)
         if template and self.user_id.email:
             template.send_mail(self.id, force_send=True)
+
+    def _btp_compute_ai_score(self):
+        """Compute a deterministic lead score from business signals."""
+        self.ensure_one()
+        score = 0.0
+        reasons = []
+
+        # Fit
+        if self.origin in ('tender', 'partner', 'referral'):
+            score += 18
+            reasons.append(_('high-quality source'))
+        elif self.origin in ('web', 'social'):
+            score += 10
+            reasons.append(_('digital inbound source'))
+        else:
+            score += 6
+            reasons.append(_('standard source'))
+
+        if self.partner_id:
+            score += 12
+            reasons.append(_('identified company'))
+        if self.contact_id:
+            score += 10
+            reasons.append(_('identified contact'))
+        if self.site_address or self.site_city or self.site_zip:
+            score += 8
+            reasons.append(_('site details provided'))
+
+        # Intent
+        if self.response_status == 'immediate':
+            score += 20
+            reasons.append(_('immediate need'))
+        elif self.response_status == 'later':
+            score += 8
+            reasons.append(_('deferred interest'))
+        elif self.response_status in ('not_interested', 'lost'):
+            score -= 12
+            reasons.append(_('negative response'))
+
+        if self.budget and self.budget > 0:
+            score += min(20, 5 + (self.budget / 50000.0))
+            reasons.append(_('budget identified'))
+
+        if self.tender_deadline:
+            days = (self.tender_deadline - fields.Date.today()).days
+            if 0 <= days <= 14:
+                score += 8
+                reasons.append(_('near tender deadline'))
+            elif days < 0:
+                score -= 8
+                reasons.append(_('tender deadline passed'))
+
+        # Freshness and execution risk
+        if self.next_reminder_date:
+            lag_days = (fields.Datetime.now() - self.next_reminder_date).days
+            if lag_days > 30:
+                score -= 10
+                reasons.append(_('reminder overdue >30d'))
+            elif lag_days > 15:
+                score -= 5
+                reasons.append(_('reminder overdue >15d'))
+            else:
+                score += 5
+                reasons.append(_('follow-up up to date'))
+        if self.is_duplicate:
+            score -= 15
+            reasons.append(_('duplicate risk'))
+
+        return max(0.0, min(100.0, score)), ', '.join(reasons)
+
+    def action_ai_rescore(self):
+        """Manual action to recompute AI score and optional AI briefing."""
+        for lead in self:
+            score, reason = lead._btp_compute_ai_score()
+            vals = {
+                'ai_score': score,
+                'ai_score_reason': reason,
+                'ai_last_scored_at': fields.Datetime.now(),
+            }
+            # Optional natural-language briefing from active prompt template.
+            template = self.env['btp.prompt.template'].search(
+                [('code', '=', 'lead_briefing'), ('active', '=', True)],
+                order='version desc',
+                limit=1,
+            )
+            if template:
+                briefing = template.run_with_variables({
+                    'lead_title': lead.name,
+                    'origin': lead.origin,
+                    'score': score,
+                    'reason': reason,
+                    'budget': lead.budget or 0.0,
+                    'probability': lead.probability or 0.0,
+                    'city': lead.site_city or '',
+                }, max_tokens=220)
+                if briefing:
+                    vals['ai_briefing'] = briefing
+            lead.write(vals)
+            self.env['btp.lead.score.log'].create({
+                'lead_id': lead.id,
+                'score': score,
+                'reason': reason,
+                'model_info': template.provider_id.model_name if template and template.provider_id else 'heuristic',
+            })
+        return True
+
+    @api.model
+    def _cron_ai_rescore_leads(self):
+        batch_size = int(
+            self.env['ir.config_parameter'].sudo().get_param(
+                'btp_prospecting.ai_rescore_batch_size',
+                '50',
+            ) or 50
+        )
+        batch_size = max(1, min(batch_size, 200))
+        leads = self.search([('active', '=', True), ('converted', '=', False)], limit=batch_size)
+        leads.action_ai_rescore()
+        return len(leads)
 
 
 class BtpLeadTag(models.Model):

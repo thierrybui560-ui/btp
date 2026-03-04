@@ -157,6 +157,8 @@
                 <field name="user_id"/>
                 <field name="subcontractor_id"/>
                 <field name="hours"/>
+                <field name="hourly_rate" optional="hide"/>
+                <field name="labor_cost"/>
                 <field name="qty_done"/>
                 <field name="uom_id"/>
             </list>
@@ -178,6 +180,8 @@
                         </group>
                         <group>
                             <field name="hours"/>
+                            <field name="hourly_rate"/>
+                            <field name="labor_cost" readonly="1"/>
                             <field name="qty_done"/>
                             <field name="uom_id"/>
                             <field name="notes"/>
@@ -195,6 +199,7 @@
                 <field name="site_id" type="row"/>
                 <field name="date" type="col"/>
                 <field name="hours" type="measure"/>
+                <field name="labor_cost" type="measure"/>
                 <field name="qty_done" type="measure"/>
             </pivot>
         </field>
@@ -314,7 +319,7 @@
     <record id="action_btp_site_performance" model="ir.actions.act_window">
         <field name="name">Yield Entries</field>
         <field name="res_model">btp.site.performance</field>
-        <field name="view_mode">list,form,pivot,graph</field>
+        <field name="view_mode">graph,pivot,list,form</field>
         <field name="search_view_id" ref="search_btp_site_performance"/>
         <field name="context">{'search_default_group_task': 1}</field>
     </record>

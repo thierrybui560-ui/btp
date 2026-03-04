@@ -371,7 +371,7 @@ class BtpQuoteItemLabor(models.Model):
     subcontractor_id = fields.Many2one(
         'res.partner',
         string='Subcontractor',
-        # Domain will be applied after module upgrade completes
+        domain="[('is_company', '=', True), ('is_subcontractor', '=', True)]",
         help='Subcontractor for this labor'
     )
     subcontractor_unit_price = fields.Float(
@@ -433,4 +433,27 @@ class BtpQuoteItemLabor(models.Model):
             self.daily_cost = 0.0
             self.yield_per_hour = 0.0
             self.yield_per_day = 0.0
+
+    @api.constrains('labor_type', 'subcontractor_id')
+    def _check_subcontractor_required(self):
+        for labor in self:
+            if labor.labor_type == 'subcontracting' and not labor.subcontractor_id:
+                raise ValidationError(_('A subcontractor is required for subcontracting labor lines.'))
+            if labor.labor_type == 'subcontracting' and labor.subcontractor_id and not labor.subcontractor_id.is_subcontractor:
+                raise ValidationError(_('Selected partner must be marked as subcontractor.'))
+
+    @api.constrains('labor_type', 'subcontractor_id')
+    def _check_subcontractor_documents(self):
+        """Enforce compliance when subcontractor blocking is enabled."""
+        block_enabled = self.env['ir.config_parameter'].sudo().get_param(
+            'btp_prospecting.btp_subcontractor_blocking_enabled',
+            'False',
+        ) == 'True'
+        if not block_enabled:
+            return
+        subcontractors = self.filtered(
+            lambda l: l.labor_type == 'subcontracting' and l.subcontractor_id
+        ).mapped('subcontractor_id')
+        if subcontractors:
+            subcontractors._btp_validate_subcontractor_documents_or_raise()
 

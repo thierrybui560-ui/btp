@@ -15,10 +15,34 @@
             </xpath>
         </field>
     </record>
+    <record id="view_btp_site_margin_pivot" model="ir.ui.view">
+        <field name="name">project.project.btp.margin.pivot</field>
+        <field name="model">project.project</field>
+        <field name="arch" type="xml">
+            <pivot string="Site Margin KPI">
+                <field name="company_id" type="row"/>
+                <field name="btp_start_date" type="col"/>
+                <field name="btp_quote_total" type="measure"/>
+                <field name="btp_invoiced_total" type="measure"/>
+                <field name="btp_actual_costs" type="measure"/>
+                <field name="btp_net_margin" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+    <record id="view_btp_site_margin_graph" model="ir.ui.view">
+        <field name="name">project.project.btp.margin.graph</field>
+        <field name="model">project.project</field>
+        <field name="arch" type="xml">
+            <graph string="Site Margin KPI" type="bar">
+                <field name="company_id"/>
+                <field name="btp_net_margin" type="measure"/>
+            </graph>
+        </field>
+    </record>
     <record id="action_btp_site_margin" model="ir.actions.act_window">
         <field name="name">Margin by Site</field>
         <field name="res_model">project.project</field>
-        <field name="view_mode">list</field>
+        <field name="view_mode">pivot,graph,list,form</field>
         <field name="search_view_id" ref="btp_prospecting.view_btp_site_search"/>
         <field name="help" type="html">
             <p>Compare quote total (forecast), invoiced total, actual costs (from consumptions), and net margin by site. Use optional columns to show financial fields.</p>

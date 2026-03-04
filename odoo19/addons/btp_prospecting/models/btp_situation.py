@@ -125,6 +125,7 @@ class BtpSituation(models.Model):
         if self.state != 'confirmed':
             raise UserError(_('Confirm the situation before creating the invoice.'))
         site = self.site_id
+        site._btp_assert_not_blocked()
         if not site.partner_id:
             raise UserError(_('Site must have a client (Partner) set.'))
         order = site.btp_sale_order_id

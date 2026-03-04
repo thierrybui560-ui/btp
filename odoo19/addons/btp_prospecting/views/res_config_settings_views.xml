@@ -20,6 +20,26 @@
                                  help="Number of days before expiration to flag subcontractor documents as expiring soon.">
                             <field name="btp_document_expiration_days"/>
                         </setting>
+                        <setting id="btp_yield_alert_threshold_setting"
+                                 string="Yield alert threshold (%)"
+                                 help="Yield entries below this threshold are flagged.">
+                            <field name="btp_yield_alert_threshold"/>
+                        </setting>
+                        <setting id="btp_yield_escalation_days_setting"
+                                 string="Yield escalation delay (days)"
+                                 help="Low-yield alerts older than this delay are escalated to management.">
+                            <field name="btp_yield_escalation_days"/>
+                        </setting>
+                        <setting id="btp_default_internal_hourly_cost_setting"
+                                 string="Default internal hourly cost"
+                                 help="Fallback internal labor cost for site margin calculations.">
+                            <field name="btp_default_internal_hourly_cost"/>
+                        </setting>
+                        <setting id="btp_default_subcontractor_hourly_cost_setting"
+                                 string="Default subcontractor hourly cost"
+                                 help="Fallback subcontractor labor cost for site margin calculations.">
+                            <field name="btp_default_subcontractor_hourly_cost"/>
+                        </setting>
                     </block>
                     <block title="System Governance (Module 15)" name="btp_governance_settings">
                         <setting id="btp_automatic_reattribution_setting"
@@ -31,6 +51,18 @@
                                  string="Inactive client reattribution (days)"
                                  help="After this many days without activity, clients are reattributed to the manager (if automatic reattribution is enabled).">
                             <field name="btp_reattribution_inactive_days" invisible="not btp_automatic_reattribution_enabled"/>
+                        </setting>
+                    </block>
+                    <block title="AI Governance (Annex)" name="btp_ai_governance_settings">
+                        <setting id="btp_ai_enabled_setting"
+                                 string="Enable AI external calls"
+                                 help="Global kill-switch for external LLM provider calls.">
+                            <field name="btp_ai_enabled"/>
+                        </setting>
+                        <setting id="btp_ai_daily_request_limit_setting"
+                                 string="AI max requests per day"
+                                 help="Maximum number of AI requests per company per day (0 = unlimited).">
+                            <field name="btp_ai_daily_request_limit" invisible="not btp_ai_enabled"/>
                         </setting>
                     </block>
                 </app>

@@ -30,3 +30,21 @@
   border-left: 3px solid #875a7b;
 }
 
+// Improve readability in dense management tables by allowing content wrapping.
+// Opt-in class to avoid affecting every backend list view.
+.btp_dense_table.o_list_view .o_data_row td {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: initial !important;
+  line-height: 1.35;
+}
+
+.btp_dense_table.o_list_view .o_data_row td .o_field_widget {
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+
+.btp_dense_table.o_list_view table {
+  table-layout: auto;
+}
+

@@ -235,14 +235,24 @@ class ProjectProject(models.Model):
                 site.btp_margin_percent = 0.0
 
     def _btp_actual_costs_compute(self):
-        """Actual costs from consumptions (real_qty × product cost). Pointing/labor can be extended later."""
+        """Actual costs from consumptions and pointing labor entries."""
         self.ensure_one()
         cost = 0.0
         consumptions = self.env['btp.site.consumption'].search([('site_id', '=', self.id)])
         for c in consumptions:
             price = c.product_id.standard_price if c.product_id else 0.0
             cost += (c.real_qty or 0.0) * price
+        pointings = self.env['btp.site.pointing'].search([('site_id', '=', self.id)])
+        cost += sum(pointings.mapped('labor_cost'))
         return cost
+
+    def _btp_assert_not_blocked(self):
+        for site in self:
+            if site.btp_is_blocked:
+                raise UserError(_(
+                    'Site "%s" is blocked because mandatory documents are missing or expired. '
+                    'Please complete the document checklist before continuing.'
+                ) % site.display_name)
 
     @api.depends('btp_invoice_ids', 'btp_invoice_ids.btp_invoice_type', 'btp_invoice_ids.state')
     def _compute_btp_has_final_invoice(self):
@@ -271,6 +281,7 @@ class ProjectProject(models.Model):
     def action_btp_generate_planning(self):
         """Generate Gantt tasks from the site's source quote items (Lot → Title → Subtitle → Item)."""
         self.ensure_one()
+        self._btp_assert_not_blocked()
         if not self.btp_sale_order_id:
             raise UserError(_('This site has no source quote. Link a quote (Source Quote/Order) first, or create a site from an accepted quote.'))
         order = self.btp_sale_order_id
@@ -313,6 +324,7 @@ class ProjectProject(models.Model):
     def action_btp_new_situation(self):
         """Create a new monthly situation (draft) with lines from the site's quote."""
         self.ensure_one()
+        self._btp_assert_not_blocked()
         if not self.btp_sale_order_id:
             raise UserError(_('Link a Source Quote/Order to the site first.'))
         order = self.btp_sale_order_id
@@ -391,6 +403,7 @@ class ProjectProject(models.Model):
     def action_btp_create_deposit_invoice(self):
         """Open wizard to create a deposit invoice for this site."""
         self.ensure_one()
+        self._btp_assert_not_blocked()
         if not self.partner_id:
             raise UserError(_('Site must have a client (Partner) set.'))
         return {
@@ -405,6 +418,7 @@ class ProjectProject(models.Model):
     def action_btp_create_final_invoice(self):
         """Create a single final invoice from the site's quote (one-shot invoicing)."""
         self.ensure_one()
+        self._btp_assert_not_blocked()
         if not self.partner_id:
             raise UserError(_('Site must have a client (Partner) set.'))
         order = self.btp_sale_order_id
@@ -523,7 +537,25 @@ class ProjectProject(models.Model):
         for vals in vals_list:
             if not vals.get('btp_site_code'):
                 vals['btp_site_code'] = self._generate_site_code()
-        return super().create(vals_list)
+        sites = super().create(vals_list)
+        requirement_model = self.env['btp.site.document.requirement']
+        default_requirements = [
+            {'category': 'contract', 'document_type': 'client_contract', 'required_before_start': True},
+            {'category': 'regulatory', 'document_type': 'ppsps', 'required_before_start': True},
+            {'category': 'regulatory', 'document_type': 'safety_certificate', 'required_before_start': True},
+        ]
+        for site in sites:
+            if site.btp_document_requirement_ids:
+                continue
+            requirement_model.create([
+                {
+                    'site_id': site.id,
+                    'is_mandatory': True,
+                    **vals,
+                }
+                for vals in default_requirements
+            ])
+        return sites
 
     def _generate_site_code(self):
         sequence = self.env['ir.sequence'].next_by_code(

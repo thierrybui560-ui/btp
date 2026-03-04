@@ -160,6 +160,43 @@ class AccountMove(models.Model):
         compute='_compute_btp_invoice_status',
         help='paid / pending / late for BTP follow-up',
     )
+    btp_due_bucket = fields.Selection(
+        [
+            ('paid', 'Paid'),
+            ('in_payment', 'In Payment'),
+            ('overdue', 'Overdue'),
+            ('due_soon', 'Due <= 7 days'),
+            ('pending', 'Pending'),
+        ],
+        string='Due Bucket',
+        compute='_compute_btp_due_bucket',
+        store=True,
+        help='Normalized due status used by list decorations and KPI reporting.',
+    )
+
+    @api.depends('payment_state', 'invoice_date_due', 'move_type')
+    def _compute_btp_due_bucket(self):
+        today = fields.Date.context_today(self)
+        for move in self:
+            if move.move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund'):
+                move.btp_due_bucket = False
+                continue
+            if move.payment_state == 'paid':
+                move.btp_due_bucket = 'paid'
+                continue
+            if move.payment_state == 'in_payment':
+                move.btp_due_bucket = 'in_payment'
+                continue
+            due = move.invoice_date_due
+            if not due:
+                move.btp_due_bucket = 'pending'
+                continue
+            if due < today:
+                move.btp_due_bucket = 'overdue'
+            elif (due - today).days <= 7:
+                move.btp_due_bucket = 'due_soon'
+            else:
+                move.btp_due_bucket = 'pending'
 
     def _get_valid_journal_types(self):
         """When opening New from Supplier Outstanding, context has default_move_type='in_invoice'
@@ -218,17 +255,17 @@ class AccountMove(models.Model):
             if today < due:
                 continue
             if days_late >= 30 and move.btp_reminder_status == '2':
-                move._btp_send_reminder_email('formal')
-                move.write({'btp_reminder_status': 'formal'})
+                if move._btp_send_reminder_email('formal'):
+                    move.write({'btp_reminder_status': 'formal'})
             elif days_late >= 30 and move.btp_reminder_status == '1':
-                move._btp_send_reminder_email('2nd')
-                move.write({'btp_reminder_status': '2'})
+                if move._btp_send_reminder_email('2nd'):
+                    move.write({'btp_reminder_status': '2'})
             elif days_late >= 15 and move.btp_reminder_status == '0':
-                move._btp_send_reminder_email('1st')
-                move.write({'btp_reminder_status': '1'})
+                if move._btp_send_reminder_email('1st'):
+                    move.write({'btp_reminder_status': '1'})
 
     def _btp_send_reminder_email(self, reminder_kind):
-        """Send reminder email using mail template. Sets sent flags on move."""
+        """Send reminder email using mail template. Sets sent flags only when send succeeds."""
         self.ensure_one()
         template_xmlids = {
             'courtesy': 'btp_prospecting.email_template_btp_invoice_reminder_courtesy',
@@ -238,13 +275,18 @@ class AccountMove(models.Model):
             'formal': 'btp_prospecting.email_template_btp_invoice_reminder_formal',
         }
         template = self.env.ref(template_xmlids.get(reminder_kind), raise_if_not_found=False)
+        sent = False
         if template:
             try:
                 template.send_mail(self.id, force_send=True)
+                sent = True
             except Exception:
-                pass
+                sent = False
+        if not sent:
+            return False
         now = fields.Datetime.now()
         if reminder_kind == 'courtesy':
             self.write({'btp_reminder_courtesy_sent': now})
         elif reminder_kind == 'official':
             self.write({'btp_reminder_official_sent': now})
+        return True

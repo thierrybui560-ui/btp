@@ -16,6 +16,12 @@ class BtpAuditLog(models.Model):
         required=True,
         ondelete='restrict',
     )
+    company_id = fields.Many2one(
+        'res.company',
+        string='Company',
+        default=lambda self: self.env.company,
+        index=True,
+    )
     action = fields.Selection([
         ('create', 'Create'),
         ('write', 'Update'),
@@ -30,10 +36,11 @@ class BtpAuditLog(models.Model):
     create_date = fields.Datetime(string='Date', readonly=True)
 
     @api.model
-    def log(self, action, model_name=None, res_id=None, reason=None):
+    def log(self, action, model_name=None, res_id=None, reason=None, company_id=None):
         """Create an audit log entry. Use from write/create/unlink overrides."""
         return self.sudo().create({
             'user_id': self.env.user.id,
+            'company_id': company_id or self.env.company.id,
             'action': action,
             'model_name': model_name,
             'res_id': res_id,

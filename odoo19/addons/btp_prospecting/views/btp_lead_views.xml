@@ -61,7 +61,7 @@
                     <button name="action_convert_to_opportunity" string="Convert to Opportunity" type="object" 
                             class="oe_highlight" 
                             modifiers="{'invisible': ['|', ('converted', '=', True), ('can_be_converted', '=', False)]}"/>
-                    <field name="stage_id" widget="statusbar" statusbar_visible="qualification_status"/>
+                    <field name="stage_id" widget="statusbar"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">

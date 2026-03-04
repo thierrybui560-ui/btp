@@ -295,6 +295,105 @@
             <field name="perm_unlink" eval="True"/>
             <field name="groups" eval="[(4, ref('group_btp_manager'))]"/>
         </record>
+
+        <!-- Cross-module company scoping for Module 11+ / Annex models -->
+        <record id="btp_report_template_rule_company" model="ir.rule">
+            <field name="name">BTP Report Template: Multi-Company</field>
+            <field name="model_id" ref="model_btp_report_template"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="btp_export_job_rule_company" model="ir.rule">
+            <field name="name">BTP Export Job: Multi-Company</field>
+            <field name="model_id" ref="model_btp_export_job"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="btp_call_report_rule_company" model="ir.rule">
+            <field name="name">BTP Call Report: Multi-Company</field>
+            <field name="model_id" ref="model_btp_call_report"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="btp_call_report_action_rule_company" model="ir.rule">
+            <field name="name">BTP Call Report Action: Multi-Company</field>
+            <field name="model_id" ref="model_btp_call_report_action"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="btp_ai_provider_rule_company" model="ir.rule">
+            <field name="name">BTP AI Provider: Multi-Company</field>
+            <field name="model_id" ref="model_btp_ai_provider"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="btp_prompt_template_rule_company" model="ir.rule">
+            <field name="name">BTP Prompt Template: Multi-Company</field>
+            <field name="model_id" ref="model_btp_prompt_template"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="btp_ai_log_rule_company" model="ir.rule">
+            <field name="name">BTP AI Log: Multi-Company</field>
+            <field name="model_id" ref="model_btp_ai_log"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="btp_lead_score_log_rule_company" model="ir.rule">
+            <field name="name">BTP Lead Score Log: Multi-Company</field>
+            <field name="model_id" ref="model_btp_lead_score_log"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="btp_tender_source_rule_company" model="ir.rule">
+            <field name="name">BTP Tender Source: Multi-Company</field>
+            <field name="model_id" ref="model_btp_tender_source"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="btp_tender_watch_run_rule_company" model="ir.rule">
+            <field name="name">BTP Tender Watch Run: Multi-Company</field>
+            <field name="model_id" ref="model_btp_tender_watch_run"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="btp_rag_document_rule_company" model="ir.rule">
+            <field name="name">BTP RAG Document: Multi-Company</field>
+            <field name="model_id" ref="model_btp_rag_document"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="btp_rag_chunk_rule_company" model="ir.rule">
+            <field name="name">BTP RAG Chunk: Multi-Company</field>
+            <field name="model_id" ref="model_btp_rag_chunk"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="btp_company_reattribution_rule_company" model="ir.rule">
+            <field name="name">BTP Company Reattribution: Multi-Company</field>
+            <field name="model_id" ref="model_btp_company_reattribution"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="btp_audit_log_rule_company" model="ir.rule">
+            <field name="name">BTP Audit Log: Multi-Company</field>
+            <field name="model_id" ref="model_btp_audit_log"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
     </data>
 </odoo>
 

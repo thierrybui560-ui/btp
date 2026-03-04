@@ -33,13 +33,27 @@ class CalendarEvent(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
-        if 'btp_site_id' in vals and vals['btp_site_id']:
-            vals['res_model_id'] = self.env['ir.model']._get('project.project').id
-            vals['res_id'] = vals['btp_site_id']
-        elif 'btp_lead_id' in vals and vals['btp_lead_id']:
-            vals['res_model_id'] = self.env['ir.model']._get('btp.lead').id
-            vals['res_id'] = vals['btp_lead_id']
-        elif 'btp_site_id' in vals or 'btp_lead_id' in vals:
-            vals['res_model_id'] = False
-            vals['res_id'] = False
-        return super().write(vals)
+        if self.env.context.get('btp_skip_res_sync'):
+            return super().write(vals)
+        res = super().write(vals)
+        if 'btp_site_id' in vals or 'btp_lead_id' in vals:
+            site_model_id = self.env['ir.model']._get('project.project').id
+            lead_model_id = self.env['ir.model']._get('btp.lead').id
+            for event in self:
+                if event.btp_site_id:
+                    target_vals = {
+                        'res_model_id': site_model_id,
+                        'res_id': event.btp_site_id.id,
+                    }
+                elif event.btp_lead_id:
+                    target_vals = {
+                        'res_model_id': lead_model_id,
+                        'res_id': event.btp_lead_id.id,
+                    }
+                else:
+                    target_vals = {
+                        'res_model_id': False,
+                        'res_id': False,
+                    }
+                super(CalendarEvent, event.with_context(btp_skip_res_sync=True)).write(target_vals)
+        return res

@@ -5,10 +5,11 @@
         <field name="name">account.move.btp.supplier.outstanding</field>
         <field name="model">account.move</field>
         <field name="arch" type="xml">
-            <list string="Supplier Outstanding" create="false" edit="true" delete="true"
-                  decoration-success="payment_state == 'paid'"
-                  decoration-warning="payment_state in ('not_paid', 'partial')"
-                  decoration-danger="payment_state in ('not_paid', 'partial')">
+            <list string="Supplier Outstanding" class="btp_dense_table" create="false" edit="true" delete="true"
+                  decoration-success="btp_due_bucket == 'paid'"
+                  decoration-info="btp_due_bucket == 'in_payment'"
+                  decoration-warning="btp_due_bucket == 'due_soon'"
+                  decoration-danger="btp_due_bucket == 'overdue'">
                 <header>
                     <button name="%(btp_prospecting.action_btp_new_vendor_bill)d" type="action" string="New" class="btn-primary" display="always"/>
                 </header>
@@ -21,25 +22,71 @@
                 <field name="amount_residual" string="Balance Due" sum="Balance Due"/>
                 <field name="payment_state" widget="badge"
                        decoration-success="payment_state == 'paid'"
-                       decoration-warning="payment_state in ('not_paid', 'partial')"
-                       decoration-danger="payment_state in ('not_paid', 'partial')"
+                       decoration-warning="btp_due_bucket == 'due_soon'"
+                       decoration-danger="btp_due_bucket == 'overdue'"
                        decoration-info="payment_state == 'in_payment'"/>
+                <field name="btp_due_bucket" widget="badge" optional="hide"/>
                 <field name="state" column_invisible="1"/>
                 <field name="btp_site_id" optional="show"/>
                 <field name="company_id" groups="base.group_multi_company"/>
             </list>
         </field>
     </record>
+    <record id="view_btp_supplier_outstanding_search" model="ir.ui.view">
+        <field name="name">account.move.btp.supplier.outstanding.search</field>
+        <field name="model">account.move</field>
+        <field name="arch" type="xml">
+            <search string="Supplier Outstanding">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="btp_site_id"/>
+                <field name="invoice_date_due"/>
+                <filter string="Overdue" name="overdue" domain="[('btp_due_bucket', '=', 'overdue')]"/>
+                <filter string="Due &lt;= 7 Days" name="due_soon" domain="[('btp_due_bucket', '=', 'due_soon')]"/>
+                <filter string="Pending" name="pending" domain="[('btp_due_bucket', '=', 'pending')]"/>
+                <filter string="Unpaid/Partial" name="unpaid_partial" domain="[('payment_state', 'in', ('not_paid', 'partial'))]"/>
+                <group>
+                    <filter string="Supplier" name="grp_partner" context="{'group_by': 'partner_id'}"/>
+                    <filter string="Site" name="grp_site" context="{'group_by': 'btp_site_id'}"/>
+                    <filter string="Company" name="grp_company" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
+                    <filter string="Due Month" name="grp_due_month" context="{'group_by': 'invoice_date_due:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="view_btp_supplier_outstanding_pivot" model="ir.ui.view">
+        <field name="name">account.move.btp.supplier.outstanding.pivot</field>
+        <field name="model">account.move</field>
+        <field name="arch" type="xml">
+            <pivot string="Supplier Outstanding KPI">
+                <field name="partner_id" type="row"/>
+                <field name="invoice_date_due" type="col"/>
+                <field name="amount_total" type="measure"/>
+                <field name="amount_residual" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+    <record id="view_btp_supplier_outstanding_graph" model="ir.ui.view">
+        <field name="name">account.move.btp.supplier.outstanding.graph</field>
+        <field name="model">account.move</field>
+        <field name="arch" type="xml">
+            <graph string="Supplier Outstanding KPI" type="bar">
+                <field name="partner_id"/>
+                <field name="amount_residual" type="measure"/>
+            </graph>
+        </field>
+    </record>
     <record id="action_btp_supplier_outstanding" model="ir.actions.act_window">
         <field name="name">Supplier Outstanding</field>
         <field name="res_model">account.move</field>
-        <field name="view_mode">list</field>
+        <field name="view_mode">pivot,graph,list,form</field>
         <field name="view_id" ref="view_btp_supplier_outstanding_list"/>
+        <field name="search_view_id" ref="view_btp_supplier_outstanding_search"/>
         <field name="context">{'default_move_type': 'in_invoice'}</field>
         <field name="domain">[('move_type', '=', 'in_invoice'), ('state', 'in', ('posted', 'draft'))]</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">No supplier invoices to follow up.</p>
-            <p>Green = paid, Orange = due within 7 days, Red = overdue. Internal alerts (D-7) help proactive management.</p>
+            <p>KPI view highlights overdue suppliers, due-soon invoices and payable exposure by site/company.</p>
         </field>
     </record>
 </odoo>

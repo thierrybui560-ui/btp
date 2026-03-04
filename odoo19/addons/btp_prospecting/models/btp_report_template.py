@@ -58,6 +58,7 @@ class BtpReportTemplate(models.Model):
     company_id = fields.Many2one(
         'res.company',
         string='Company',
+        default=lambda self: self.env.company,
         help='Restrict to one company (leave empty for all).',
     )
     output_format = fields.Selection(
@@ -97,6 +98,44 @@ class BtpReportTemplate(models.Model):
     def _compute_export_job_count(self):
         for r in self:
             r.export_job_count = len(r.export_job_ids)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        for rec in records:
+            self.env['btp.audit.log'].sudo().log(
+                'create',
+                model_name=rec._name,
+                res_id=rec.id,
+                reason=_('Report template created: %s') % rec.name,
+                company_id=rec.company_id.id if rec.company_id else self.env.company.id,
+            )
+        return records
+
+    def write(self, vals):
+        result = super().write(vals)
+        for rec in self:
+            self.env['btp.audit.log'].sudo().log(
+                'write',
+                model_name=rec._name,
+                res_id=rec.id,
+                reason=_('Report template updated: %s') % rec.name,
+                company_id=rec.company_id.id if rec.company_id else self.env.company.id,
+            )
+        return result
+
+    def unlink(self):
+        logs = [(rec.id, rec.name, rec.company_id.id if rec.company_id else self.env.company.id) for rec in self]
+        result = super().unlink()
+        for rec_id, rec_name, company_id in logs:
+            self.env['btp.audit.log'].sudo().log(
+                'unlink',
+                model_name=self._name,
+                res_id=rec_id,
+                reason=_('Report template deleted: %s') % rec_name,
+                company_id=company_id,
+            )
+        return result
 
     def action_run_report(self):
         """Generate report now and optionally send by email."""
@@ -224,7 +263,14 @@ class BtpReportTemplate(models.Model):
             by_user[key]['total'] += o.amount_total or 0
             if o.state in ('sale', 'done'):
                 by_user[key]['converted'] += 1
-        leads = self.env['btp.lead'].search([('converted', '=', True)])
+        lead_domain = [('converted', '=', True)]
+        if self.date_from:
+            lead_domain.append(('write_date', '>=', self.date_from))
+        if self.date_to:
+            lead_domain.append(('write_date', '<=', self.date_to))
+        if self.company_id:
+            lead_domain.append(('company_id', '=', self.company_id.id))
+        leads = self.env['btp.lead'].search(lead_domain)
         lead_by_user = {}
         for l in leads:
             u = l.user_id
@@ -300,6 +346,8 @@ class BtpReportTemplate(models.Model):
             domain.append(('create_date', '>=', self.date_from))
         if self.date_to:
             domain.append(('create_date', '<=', self.date_to))
+        if self.company_id:
+            domain.append(('company_id', '=', self.company_id.id))
         leads = self.env['btp.lead'].search(domain)
         by_user = {}
         for l in leads:
@@ -310,10 +358,17 @@ class BtpReportTemplate(models.Model):
             by_user[key]['leads'] += 1
             if l.converted:
                 by_user[key]['converted'] += 1
-        orders = self.env['sale.order'].search([
+        order_domain = [
             ('btp_quote_number', '!=', False),
             ('state', 'in', ('sale', 'done')),
-        ])
+        ]
+        if self.date_from:
+            order_domain.append(('date_order', '>=', self.date_from))
+        if self.date_to:
+            order_domain.append(('date_order', '<=', self.date_to))
+        if self.company_id:
+            order_domain.append(('company_id', '=', self.company_id.id))
+        orders = self.env['sale.order'].search(order_domain)
         for o in orders:
             u = o.user_id
             key = (u.id if u else 0, u.name if u else _('No user'))
@@ -383,6 +438,9 @@ class BtpReportTemplate(models.Model):
             domain.append(('date', '<=', self.date_to))
         if self.company_id:
             domain.append(('company_id', '=', self.company_id.id))
+        incident_type_labels = dict(
+            self.env['btp.qse.incident']._fields['incident_type'].selection
+        )
         incidents = self.env['btp.qse.incident'].search(domain, order='site_id, date desc')
         headers = [_('Site'), _('Date'), _('Type'), _('Status'), _('Description')]
         rows = []
@@ -390,7 +448,7 @@ class BtpReportTemplate(models.Model):
             rows.append([
                 i.site_id.name if i.site_id else '',
                 i.date.strftime('%Y-%m-%d') if i.date else '',
-                dict(REPORT_SCOPE).get(i.incident_type, i.incident_type) if i.incident_type else '',
+                incident_type_labels.get(i.incident_type, i.incident_type) if i.incident_type else '',
                 i.state or '',
                 (i.description or '')[:80],
             ])

@@ -17,6 +17,14 @@ class BtpExportJob(models.Model):
         required=True,
         ondelete='cascade',
     )
+    company_id = fields.Many2one(
+        'res.company',
+        string='Company',
+        related='report_template_id.company_id',
+        store=True,
+        readonly=True,
+        index=True,
+    )
     run_date = fields.Datetime(string='Run Date', default=fields.Datetime.now, readonly=True)
     state = fields.Selection(
         [('pending', 'Pending'), ('done', 'Done'), ('failed', 'Failed')],
@@ -54,6 +62,8 @@ class BtpExportJob(models.Model):
             'Please find attached the report "%s" (generated on %s).'
         ) % (template.name, self.run_date.strftime('%Y-%m-%d %H:%M'))
         for user in template.recipient_user_ids:
+            if template.company_id and template.company_id not in user.company_ids:
+                continue
             if not user.email:
                 continue
             mail_values = {
@@ -62,4 +72,4 @@ class BtpExportJob(models.Model):
                 'email_to': user.email,
                 'attachment_ids': [(4, attachment.id)],
             }
-            self.env['mail.mail'].sudo().create(mail_values)
+            self.env['mail.mail'].sudo().create(mail_values).send()

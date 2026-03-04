@@ -393,6 +393,12 @@
               parent="menu_btp_reports_exports"
               action="action_btp_report_templates"
               sequence="10"/>
+    <menuitem id="menu_btp_kpi_dashboards"
+              name="KPI Dashboards"
+              parent="menu_btp_reports_exports"
+              action="action_btp_kpi_dashboards"
+              sequence="15"
+              groups="btp_prospecting.group_btp_manager"/>
     <menuitem id="menu_btp_export_history"
               name="Export History"
               parent="menu_btp_reports_exports"

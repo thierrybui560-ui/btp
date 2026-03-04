@@ -146,6 +146,14 @@ class BtpCallReportAction(models.Model):
         required=True,
         ondelete='cascade',
     )
+    company_id = fields.Many2one(
+        'res.company',
+        string='Company',
+        related='call_report_id.company_id',
+        store=True,
+        readonly=True,
+        index=True,
+    )
     name = fields.Char(string='Action', required=True)
     note = fields.Text(string='Details')
     assigned_to_id = fields.Many2one(

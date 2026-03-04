@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Central KPI dashboard entry point -->
+    <record id="action_btp_kpi_dashboards" model="ir.actions.act_window">
+        <field name="name">KPI Dashboards</field>
+        <field name="res_model">spreadsheet.dashboard</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('name', 'ilike', 'BTP')]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create a BTP KPI dashboard.</p>
+            <p>Use spreadsheet dashboards for management KPI cards and trends by module (sales, sites, finance, QHSE, governance).</p>
+        </field>
+    </record>
+</odoo>

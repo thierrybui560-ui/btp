@@ -10,7 +10,7 @@
             <!-- Add BTP Company fields after the main address block -->
             <xpath expr="//sheet/group[1]" position="after">
                 <field name="btp_duplicate_warning" invisible="1"/>
-                <group name="btp_company_info" string="BTP Company Information" col="4" modifiers="{'invisible': [('company_type', '!=', 'company')]}">
+                <group name="btp_company_info" string="BTP Company Information" col="4" invisible="company_type != 'company'">
                     <field name="siren" colspan="2"/>
                     <field name="btp_group_id" colspan="2"/>
                     <field name="siret" colspan="2"/>
@@ -23,7 +23,7 @@
                     <field name="btp_is_prospect" widget="boolean_toggle" colspan="2"/>
                     <field name="btp_is_client" widget="boolean_toggle" readonly="1" colspan="2"/>
                 </group>
-                <group name="btp_api_info" string="API Information" modifiers="{'invisible': [('company_type', '!=', 'company'), ('btp_api_enriched', '=', False)]}">
+                <group name="btp_api_info" string="API Information" invisible="company_type != 'company' or btp_api_enriched == False">
                     <field name="btp_api_enriched" widget="boolean_toggle"/>
                     <field name="btp_api_source"/>
                 </group>
@@ -39,18 +39,18 @@
                 <button name="action_enrich_from_api" type="object" 
                         string="Enrich from API" 
                         class="oe_stat_button"
-                        modifiers="{'invisible': [('is_company', '=', False), ('siren', '=', False)]}"
+                        invisible="is_company == False or siren == False"
                         groups="btp_prospecting.group_btp_salesperson,btp_prospecting.group_btp_manager"/>
             </xpath>
 
             <!-- Add Multi-company sharing tab -->
             <notebook position="inside">
-                <page string="BTP Multi-Company" name="btp_multi_company" modifiers="{'invisible': [('is_company', '=', False)]}">
+                <page string="BTP Multi-Company" name="btp_multi_company" invisible="is_company == False">
                     <group>
                         <field name="btp_shared_company_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
                     </group>
                 </page>
-                <page string="Addresses" name="btp_addresses" modifiers="{'invisible': [('is_company', '=', False)]}">
+                <page string="Addresses" name="btp_addresses" invisible="is_company == False">
                     <field name="btp_address_ids" nolabel="1">
                         <list editable="bottom">
                             <field name="address_type"/>
@@ -82,7 +82,7 @@
                         </form>
                     </field>
                 </page>
-                <page string="Sites" name="btp_sites" modifiers="{'invisible': [('is_company', '=', False)]}">
+                <page string="Sites" name="btp_sites" invisible="is_company == False">
                     <field name="btp_site_ids" nolabel="1">
                         <list>
                             <field name="name"/>
@@ -93,7 +93,7 @@
                         </list>
                     </field>
                 </page>
-                <page string="Commercial Conditions" name="btp_commercial_conditions" modifiers="{'invisible': [('is_company', '=', False)]}">
+                <page string="Commercial Conditions" name="btp_commercial_conditions" invisible="is_company == False">
                     <field name="btp_commercial_condition_ids" nolabel="1">
                         <list editable="bottom">
                             <field name="company_id"/>
@@ -115,7 +115,7 @@
                     </field>
                 </page>
                 <page string="Reattributions" name="btp_reattribution"
-                      modifiers="{'invisible': [('is_company', '=', False)]}"
+                      invisible="is_company == False"
                       groups="btp_prospecting.group_btp_manager,btp_prospecting.group_btp_admin">
                     <field name="btp_reattribution_ids" nolabel="1">
                         <list>
@@ -143,7 +143,7 @@
             <data>
             <!-- Add Mobile field for contacts -->
             <xpath expr="//field[@name='phone']" position="after">
-                <field name="mobile" modifiers="{'invisible': [('company_type', '=', 'company')]}"/>
+                <field name="mobile" invisible="company_type == 'company'"/>
             </xpath>
 
             <!-- Add BTP Contact fields -->
@@ -152,8 +152,8 @@
             </field>
 
             <xpath expr="//sheet/group[group/field[@name='parent_id']]" position="after">
-                <separator string="BTP Contact Information" modifiers="{'invisible': [('company_type', '=', 'company')]}"/>
-                <group name="btp_contact_info" col="2" modifiers="{'invisible': [('company_type', '=', 'company')]}">
+                <separator string="BTP Contact Information" invisible="company_type == 'company'"/>
+                <group name="btp_contact_info" col="2" invisible="company_type == 'company'">
                     <field name="btp_contact_assigned_salesperson_id"/>
                     <field name="btp_current_company_id" widget="many2one" readonly="1"
                            options="{'no_open': True, 'no_create': True, 'no_quick_create': True}"
@@ -165,7 +165,7 @@
                     <field name="btp_duplicate_message" nolabel="1"/>
                 </div>
                 <group name="btp_duplicate_actions"
-                       modifiers="{'invisible': ['|', ('company_type', '=', 'company'), '|', ('btp_duplicate_warning', '=', False), '|', ('btp_duplicate_message', '=', False), ('btp_duplicate_message', '=', '')]}">
+                       invisible="company_type == 'company' or btp_duplicate_warning == False or btp_duplicate_message == False or btp_duplicate_message == ''">
                     <group>
                         <label for="btp_force_duplicate" string="Force Duplicate"/>
                         <field name="btp_force_duplicate" nolabel="1"/>
@@ -175,7 +175,7 @@
 
             <!-- Add Career History tab -->
             <notebook position="inside">
-                <page string="Career History" name="btp_career_history" modifiers="{'invisible': [('is_company', '=', True)]}">
+                <page string="Career History" name="btp_career_history" invisible="is_company == True">
                     <field name="btp_career_history_ids" nolabel="1" context="{'default_contact_id': id}">
                         <list>
                             <field name="company_id"/>

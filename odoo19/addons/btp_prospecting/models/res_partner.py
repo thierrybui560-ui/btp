@@ -393,6 +393,11 @@ class ResPartner(models.Model):
             # Only clear company_id for companies, not contacts
             if vals.get('is_company') or vals.get('company_type') == 'company':
                 vals['company_id'] = False
+                # Keep Odoo standard salesperson (user_id) and BTP assignment aligned.
+                if vals.get('user_id') and not vals.get('btp_assigned_salesperson_id'):
+                    vals['btp_assigned_salesperson_id'] = vals['user_id']
+                elif vals.get('btp_assigned_salesperson_id') and not vals.get('user_id'):
+                    vals['user_id'] = vals['btp_assigned_salesperson_id']
             # Default assignment to creator if not provided
             if (vals.get('is_company') or vals.get('company_type') == 'company') and not vals.get('btp_assigned_salesperson_id'):
                 # Assign only for salespeople; managers/admins can assign manually
@@ -488,7 +493,10 @@ class ResPartner(models.Model):
                 and not p.btp_assigned_salesperson_id
             )
             if to_assign:
-                to_assign.sudo().write({'btp_assigned_salesperson_id': self.env.user.id})
+                to_assign.sudo().write({
+                    'btp_assigned_salesperson_id': self.env.user.id,
+                    'user_id': self.env.user.id,
+                })
 
         # Create initial career history for new contacts with a company
         for partner, vals in zip(partners, vals_list):
@@ -523,8 +531,14 @@ class ResPartner(models.Model):
                 same_phone = incoming_phone and existing_phone and incoming_phone == existing_phone
                 same_mobile = incoming_mobile and existing_mobile and incoming_mobile == existing_mobile
                 if same_email or same_phone or same_mobile:
-                    manager = self.env.user.manager_id
-                    if manager:
+                    managers = self.env['res.users']
+                    if self.env.user.manager_id:
+                        managers |= self.env.user.manager_id
+                    if not managers:
+                        managers |= self.env.ref(
+                            'btp_prospecting.group_btp_manager'
+                        ).users
+                    for manager in managers:
                         partner.activity_schedule(
                             'mail.mail_activity_data_todo',
                             user_id=manager.id,
@@ -565,12 +579,34 @@ class ResPartner(models.Model):
         if self.env.context.get('skip_career_update'):
             return super(ResPartner, self).write(vals)
 
+        # Keep Odoo standard salesperson (user_id) and BTP assignment aligned for companies.
+        # Without this, changes made from the standard Salesperson field are not tracked by governance.
+        if ('user_id' in vals or 'btp_assigned_salesperson_id' in vals) and len(self) > 1:
+            return all(record.write(vals) for record in self)
+        if 'user_id' in vals or 'btp_assigned_salesperson_id' in vals or 'btp_contact_assigned_salesperson_id' in vals:
+            is_company = bool(self and (self[0].is_company or self[0].company_type == 'company'))
+            if is_company:
+                vals = dict(vals)
+                if 'user_id' in vals and 'btp_assigned_salesperson_id' not in vals:
+                    vals['btp_assigned_salesperson_id'] = vals['user_id']
+                elif 'btp_assigned_salesperson_id' in vals and 'user_id' not in vals:
+                    vals['user_id'] = vals['btp_assigned_salesperson_id']
+                # Defensive: if the contact-assignment field is edited on a company form,
+                # treat it as a company salesperson change to keep governance logs consistent.
+                if 'btp_contact_assigned_salesperson_id' in vals:
+                    vals['btp_assigned_salesperson_id'] = vals['btp_contact_assigned_salesperson_id']
+                    vals['user_id'] = vals['btp_contact_assigned_salesperson_id']
+
         # Snapshot old salesperson for companies/contacts before write (for reattribution after write)
         reattribution_candidates = []  # (partner_id, old_user_id, is_company)
         for partner in self:
             is_company = getattr(partner, 'is_company', False) or getattr(partner, 'company_type', None) == 'company'
-            if is_company and 'btp_assigned_salesperson_id' in vals:
-                old_id = partner.btp_assigned_salesperson_id.id if partner.btp_assigned_salesperson_id else None
+            if is_company and ('btp_assigned_salesperson_id' in vals or 'user_id' in vals or 'btp_contact_assigned_salesperson_id' in vals):
+                old_id = (
+                    partner.btp_assigned_salesperson_id.id
+                    if partner.btp_assigned_salesperson_id
+                    else (partner.user_id.id if partner.user_id else None)
+                )
                 reattribution_candidates.append((partner.id, old_id, True))
             if not is_company and 'btp_contact_assigned_salesperson_id' in vals:
                 old_id = partner.btp_contact_assigned_salesperson_id.id if partner.btp_contact_assigned_salesperson_id else None
@@ -594,15 +630,16 @@ class ResPartner(models.Model):
                 'BTP reattribution check: %s candidate(s) after write',
                 len(reattribution_candidates),
             )
-            reason = self.env.context.get('btp_reattribution_reason', '')
+            reason = (self.env.context.get('btp_reattribution_reason') or '').strip()
             AuditLog = self.env['btp.audit.log'].sudo()
             User = self.env['res.users']
+            created_reattributions = []
             for partner_id, old_user_id, is_company in reattribution_candidates:
                 partner = self.browse(partner_id)
                 if not partner.exists():
                     continue
                 if is_company:
-                    new_user = partner.btp_assigned_salesperson_id
+                    new_user = partner.btp_assigned_salesperson_id or partner.user_id
                 else:
                     new_user = partner.btp_contact_assigned_salesperson_id
                 new_user_id = new_user.id if new_user else None
@@ -618,8 +655,9 @@ class ResPartner(models.Model):
                     'old_user_id': old_user_id or False,
                     'new_user_id': new_user.id if new_user else False,
                     'changed_by_id': self.env.user.id,
-                    'reason': reason,
+                    'reason': reason or _('Manual reattribution from partner form.'),
                 })
+                created_reattributions.append(partner.display_name or str(partner_id))
                 reason_text = _('Client reattribution: %s → %s. %s') % (
                     old_user.name if old_user else _('Unassigned'),
                     new_user.name if new_user else _('Unassigned'),
@@ -632,6 +670,32 @@ class ResPartner(models.Model):
                     'res_id': partner_id,
                     'reason': reason_text,
                 })
+
+            # Optional UI feedback for manual changes from form/list view.
+            # This complements governance logs and helps users confirm action happened.
+            if created_reattributions and not self.env.context.get('btp_disable_reattribution_notification'):
+                if len(created_reattributions) == 1:
+                    message = _('Reattribution logged for %s.') % created_reattributions[0]
+                else:
+                    message = _('Reattribution logged for %s records.') % len(created_reattributions)
+                try:
+                    # Prefer the standard user notification API when available.
+                    self.env.user.notify_success(message)
+                except Exception:
+                    # Fallback via bus for environments where notify_success is unavailable.
+                    try:
+                        self.env['bus.bus']._sendone(
+                            self.env.user.partner_id,
+                            'simple_notification',
+                            {
+                                'title': _('Governance'),
+                                'message': message,
+                                'sticky': False,
+                                'warning': False,
+                            },
+                        )
+                    except Exception:
+                        _logger.debug('Reattribution notification could not be sent to UI.', exc_info=True)
 
         if not self.env.context.get('skip_duplicate_recompute'):
             self._recompute_contact_duplicate_flags()
@@ -709,6 +773,67 @@ class ResPartner(models.Model):
             return enriched_data
         
         return {}
+
+    def _btp_required_subcontractor_document_types(self):
+        """Central list of mandatory subcontractor documents for compliance checks."""
+        return {'urssaf', 'taxes', 'insurance', 'paid_vacations'}
+
+    def _btp_get_subcontractor_document_issues(self):
+        """Return missing/expired document issues for each subcontractor record.
+
+        Result format:
+        {
+            partner_id: {
+                'missing': set([...]),
+                'expired': recordset(btp.supplier.document),
+            }
+        }
+        """
+        issues = {}
+        required_types = self._btp_required_subcontractor_document_types()
+        for partner in self:
+            if not partner.is_subcontractor:
+                continue
+            docs = partner.btp_supplier_document_ids.filtered('active')
+            present_types = set(docs.mapped('document_type'))
+            missing = required_types - present_types
+            expired = docs.filtered('is_expired')
+            issues[partner.id] = {
+                'missing': missing,
+                'expired': expired,
+            }
+        return issues
+
+    def _btp_validate_subcontractor_documents_or_raise(self):
+        """Raise a business error when subcontractor docs are invalid and blocking is enabled."""
+        block_enabled = self.env['ir.config_parameter'].sudo().get_param(
+            'btp_prospecting.btp_subcontractor_blocking_enabled',
+            'False',
+        ) == 'True'
+        if not block_enabled:
+            return
+        issues = self._btp_get_subcontractor_document_issues()
+        error_lines = []
+        for partner in self.filtered('is_subcontractor'):
+            issue = issues.get(partner.id, {})
+            missing = issue.get('missing', set())
+            expired = issue.get('expired', self.env['btp.supplier.document'])
+            if not missing and not expired:
+                continue
+            details = []
+            if missing:
+                labels = dict(self.env['btp.supplier.document']._fields['document_type'].selection)
+                details.append(_('missing: %s') % ', '.join(sorted(labels.get(m, m) for m in missing)))
+            if expired:
+                details.append(
+                    _('expired: %s') % ', '.join(sorted(expired.mapped('name')))
+                )
+            error_lines.append('- %s (%s)' % (partner.display_name, '; '.join(details)))
+        if error_lines:
+            raise ValidationError(
+                _('Cannot proceed because subcontractor compliance documents are invalid:\n%s')
+                % '\n'.join(error_lines)
+            )
     
     def action_enrich_from_api(self):
         """Manual action to enrich company from API"""
