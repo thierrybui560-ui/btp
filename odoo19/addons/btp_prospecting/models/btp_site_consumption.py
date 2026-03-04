@@ -84,6 +84,26 @@ class BtpSiteConsumption(models.Model):
     )
     notes = fields.Text(string='Notes')
 
+    def _get_quote_item_planned_qty(self, quote_item=None, product=None):
+        """Return planned quantity from quote item article lines for a product."""
+        self.ensure_one()
+        quote_item = quote_item or self.quote_item_id
+        product = product or self.product_id
+        if not quote_item or not product:
+            return 0.0
+        product_tmpl = product.product_tmpl_id
+        lines = quote_item.article_ids.filtered(lambda l: l.article_id == product_tmpl)
+        return sum(lines.mapped('quantity'))
+
+    @api.onchange('quote_item_id', 'product_id')
+    def _onchange_quote_item_or_product(self):
+        """Pre-fill planned quantity from quote forecast when user did not set one yet."""
+        for rec in self:
+            if rec.quote_item_id and rec.product_id and not rec.planned_qty:
+                planned_qty = rec._get_quote_item_planned_qty()
+                if planned_qty > 0:
+                    rec.planned_qty = planned_qty
+
     @api.depends('planned_qty', 'real_qty')
     def _compute_variance(self):
         for r in self:
@@ -93,6 +113,52 @@ class BtpSiteConsumption(models.Model):
     def _compute_overconsumption_alert(self):
         for r in self:
             r.overconsumption_alert = r.planned_qty > 0 and r.variance > 0
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Default planned quantity from quote item if omitted by user/import."""
+        records = self.browse()
+        for vals in vals_list:
+            if vals.get('planned_qty'):
+                continue
+            quote_item_id = vals.get('quote_item_id')
+            product_id = vals.get('product_id')
+            if not quote_item_id or not product_id:
+                continue
+            quote_item = self.env['btp.quote.item'].browse(quote_item_id)
+            product = self.env['product.product'].browse(product_id)
+            product_tmpl = product.product_tmpl_id
+            planned_qty = sum(
+                quote_item.article_ids.filtered(lambda l: l.article_id == product_tmpl).mapped('quantity')
+            )
+            if planned_qty > 0:
+                vals['planned_qty'] = planned_qty
+        records = super().create(vals_list)
+        return records
+
+    def write(self, vals):
+        """Backfill planned quantity after product/quote item change when empty."""
+        if (
+            len(self) > 1
+            and ('quote_item_id' in vals or 'product_id' in vals)
+            and 'planned_qty' not in vals
+        ):
+            return all(rec.write(vals) for rec in self)
+
+        if (
+            len(self) == 1
+            and ('quote_item_id' in vals or 'product_id' in vals)
+            and 'planned_qty' not in vals
+        ):
+            rec = self
+            quote_item = self.env['btp.quote.item'].browse(vals['quote_item_id']) if vals.get('quote_item_id') else rec.quote_item_id
+            product = self.env['product.product'].browse(vals['product_id']) if vals.get('product_id') else rec.product_id
+            if quote_item and product and not rec.planned_qty:
+                planned_qty = rec._get_quote_item_planned_qty(quote_item=quote_item, product=product)
+                if planned_qty > 0:
+                    vals = dict(vals)
+                    vals['planned_qty'] = planned_qty
+        return super().write(vals)
 
     def action_create_outbound_move(self):
         """Create an outbound stock move for this consumption (Module 9). Only for storable products."""

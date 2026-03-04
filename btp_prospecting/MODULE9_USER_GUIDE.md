@@ -1,335 +1,827 @@
-# Module 9 — Stocks & Logistics — User & Testing Guide
+# Module 9 - Stocks & Logistics
+## Detailed Functional Guide + Full UAT Playbook (Odoo 19)
 
-This guide helps you **test Module 9 manually**: where to go in the UI, what data to use, what to do step by step, and what you should see. It is based on the current BTP Prospecting implementation (Odoo 19).
-
----
-
-## 1. What Module 9 Does (Summary)
-
-| Goal | What the system does |
-|------|----------------------|
-| **Multi-warehouse** | Manage stock in several warehouses (headquarters, agencies, site depots). |
-| **Link stock to sites** | Transfers and moves can be linked to a BTP site; consumptions on site are tracked. |
-| **Reservations** | When you confirm a quote with storable products, stock is reserved (standard Odoo + BTP site on moves). |
-| **Site consumptions** | Record planned vs actual quantities per site/article; variance and overconsumption alert. |
-| **Outbound from consumption** | From a consumption line (storable product), create a stock move to deduct stock and keep traceability. |
-| **Traceability** | Moves show BTP Site, BTP Origin (client order, site consumption, transfer, etc.), and optional link to consumption. |
+This document is written for real manual testing by business users, key users, and integrators.
+It is intentionally explicit and operational.
 
 ---
 
-## 2. Feature List (What You Can Test)
+## 1) Scope and UAT Goal
 
-Use this as a checklist for manual testing.
+Module 9 must guarantee, end-to-end:
+- Multi-warehouse stock operations.
+- Site-linked stock traceability.
+- Reservation behavior from commercial orders.
+- Planned vs actual consumptions with deviation control.
+- Inventory reliability and valuation checks.
+- Usable reports/KPIs for operations and management.
 
-| # | Feature | Where to test | Section |
-|---|---------|----------------|---------|
-| F1 | **Site depot location** — Link a stock location to a BTP site | Inventory → Locations; set "Site" (BTP) | 5.1 |
-| F2 | **Supplier reception (inflow)** — Receive products; no BTP site on receipt | Purchase → receive; then Transfers / Moves | 5.2 |
-| F3 | **Delivery with BTP site** — Confirm order with site → delivery moves get BTP Site + Origin "Client Order" | Quote with site → Confirm → Transfers | 5.3 |
-| F4 | **Reservation on order** — Confirm order with storable product and site → delivery created, moves show BTP Site | Same as F3; Check Availability on delivery | 6.1 |
-| F5 | **Site consumption (planned vs actual)** — Create consumption; see variance and overconsumption alert | Consumptions → New | 6.2 |
-| F6 | **Create outbound move from consumption** — Storable product → button "Create Outbound Move" → move created and linked | Consumption form → Stock section → Create Outbound Move | 6.3 |
-| F7 | **Internal transfer to site depot** — Transfer to location with BTP Site; set BTP Origin on move | Transfers → New (Internal) → To = site depot | 5.4 |
-| F8 | **Physical inventory** — Count and adjust stock (standard Odoo; optional BTP traceability) | Inventory → Adjustments → Physical Inventory | 7.1 |
-| F9 | **Reports** — Stock by location, consumptions by site, moves by BTP Site/Origin | Products (Stock), Consumptions Pivot, Moves | 8 |
-
----
-
-## 3. Where to Find Everything (UI Navigation)
-
-### 3.1 BTP menu: Stocks & Logistics
-
-| Menu path | What you see | Access |
-|-----------|--------------|--------|
-| **BTP Prospecting → Stocks & Logistics → Transfers** | All pickings (receipts, deliveries, internal). Column **BTP Site** when linked. | Inventory User |
-| **BTP Prospecting → Stocks & Logistics → Moves** | All stock moves. Optional columns **Site**, **BTP Origin**. Filter "BTP Site". | Inventory User |
-| **BTP Prospecting → Stocks & Logistics → Consumptions** | Site consumptions (planned/actual, variance, overconsumption). Same as Planning & Yield → Consumptions. | BTP Salesperson+ |
-| **BTP Prospecting → Stocks & Logistics → Products (Stock)** | On-hand quantities by product/location (quants). | Inventory User |
-
-### 3.2 Other entry points
-
-| Where | What |
-|-------|------|
-| **Sites & Documents → Planning & Yield → Consumptions** | Same consumptions list/form; on the form you get the **Stock** section with **Create Outbound Move**. |
-| **Inventory app** | Warehouses, Locations, Operations, Products, Reporting. BTP adds **Site** on Locations (site depot) and **BTP Site / BTP Origin** on Moves and Transfers. |
-| **Quotes & Articles → Quotes** | Create/confirm orders; link to BTP site so deliveries get BTP Site. |
-
-### 3.3 Access rights
-
-- **Transfers**, **Moves**, **Products (Stock)**: need **Inventory User** (or Manager).  
-- **Consumptions**: visible to BTP Salesperson and above.  
-- **BTP Site** on locations: visible to BTP users (e.g. Salesperson group).
+UAT success criteria:
+- All mandatory scenarios pass.
+- No blocking errors.
+- Traceability fields are coherent on movements.
+- Reports/KPIs show expected values.
 
 ---
 
-## 4. Mock Data for Testing
+## 2) What Is Implemented (Current Functional Baseline)
 
-Create these once so all steps below are repeatable.
+### 2.1 Core models used
+- `stock.location` extended with `btp_site_id`.
+- `stock.move` extended with:
+  - `btp_site_id`
+  - `btp_origin_type`
+  - `btp_consumption_id`
+- `stock.picking` with computed `btp_site_id`.
+- `btp.site.consumption` with:
+  - `planned_qty`
+  - `real_qty`
+  - `variance`
+  - `overconsumption_alert`
+  - `stock_move_id`
 
-### 4.1 Reference table
-
-| Entity | Field | Value | Notes |
-|--------|--------|--------|--------|
-| **Company** | Name | My Company | Must have at least one warehouse. |
-| **Customer** | Name | Demo Building Corp | For quotes/orders. |
-| **Warehouse** | Name | WH | Default warehouse; main stock location e.g. WH/Stock. |
-| **Product (storable)** | Name | Fireproof mortar | Type = **Storable**, UoM = kg, Internal Ref = MORTAR-FP. |
-| **Product (storable)** | Name | Mineral wool 100mm | Type = **Storable**, UoM = m², Internal Ref = MW-100. |
-| **Product (consumable)** | Name | Fixing paste | Type = **Consumable**, UoM = kg, Internal Ref = PASTE-FIX. |
-| **Site** | Name | Tour La Défense – Flocking | From quote "Create site" or Sites → New. Must have **Site Code** (e.g. 202501001). |
-| **Location (site depot)** | Name | Site 202501001 depot | Usage = Internal, **Site** (BTP) = Tour La Défense – Flocking. |
-| **Initial stock** | — | Fireproof mortar **100 kg**, Mineral wool **50 m²** | So reservation tests pass (e.g. via receipt or Update quantity). |
-
-### 4.2 Setup order
-
-1. Create the **3 products** (2 storable, 1 consumable).  
-2. Ensure **warehouse** exists (Inventory → Configuration → Warehouses).  
-3. Add **initial stock** for the 2 storable products (e.g. 100 kg and 50 m²) via a purchase receipt or Inventory adjustment.  
-4. Create **customer** Demo Building Corp.  
-5. Create a **quote** with lines using the storable products, then **Confirm** and choose **Create site** so you get site **Tour La Défense – Flocking** with a site code.  
-6. **Inventory → Configuration → Locations**: New location **Site 202501001 depot**, Parent = e.g. WH, Usage = Internal, **Site (BTP)** = Tour La Défense – Flocking.
+### 2.2 Recent fixes included
+- Auto-backfill for missing movement traceability (`BTP Site`, `BTP Origin`) when metadata is inferable.
+- Planned quantity auto-default on consumption when quote item + product match an article line.
 
 ---
 
-## 5. Warehouse & Locations (F1)
+## 3) User Roles Required for Testing
 
-### 5.1 Link a location to a BTP site (site depot)
+Minimum:
+- Inventory tester: `Inventory / User`.
+- Functional tester: `BTP Salesperson`.
+- Validation tester: `BTP Manager` (optional but recommended).
 
-**Steps**
-
-1. **Inventory** → **Configuration** → **Locations** (or open a warehouse and use Locations).  
-2. **New**: Name = `Site 202501001 depot`, Parent = your main warehouse (e.g. WH), Usage = **Internal**.  
-3. In the **BTP** group, set **Site** = **Tour La Défense – Flocking**.  
-4. Save.
-
-**Expected**
-
-- Location form shows **Site** = Tour La Défense – Flocking.  
-- In **Stocks & Logistics → Moves**, you can filter by destination = this location to see moves to the site depot.
+If you do not see a menu in this guide, first validate rights before assuming a bug.
 
 ---
 
-## 6. Logistics Flows
+## 4) One-Time Test Data Setup (Mandatory)
 
-### 6.1 Inflows — Supplier reception (F2)
+## 4.1 Master data
+Create the following:
 
-**Steps**
+1. Company: `BTP France`.
+2. Warehouses:
+   - `WH` (HQ)
+   - `AG1` (Agency)
+3. Customer: `Demo Building Corp`.
+4. Site (project): `Tour La Defense - Flocking`.
+5. Products:
+   - `Fireproof mortar` (storable, UoM kg)
+   - `Mineral wool 100mm` (storable, UoM m2)
+   - `Fixing paste` (consumable, UoM kg)
+6. Initial stock:
+   - Fireproof mortar = 500 kg
+   - Mineral wool = 200 m2
 
-1. **Purchase** → **New**: Vendor = any supplier; line Product = **Fireproof mortar**, Quantity = 100, Unit Price = 12. Confirm.  
-2. **Receive Products** → set Done = 100 for Fireproof mortar → **Validate**.
+## 4.2 Site depot location
+Create internal location:
+- Name: `SITE-202501001/Depot`
+- Usage: Internal
+- Company: BTP France
+- `Site (BTP)`: Tour La Defense - Flocking
 
-**Expected**
+## 4.3 Optional replenishment config (for shortage scenario)
+- Add vendor on storable products.
+- Enable Buy route.
+- Configure either:
+  - Reordering rule, or
+  - MTO + Buy route.
 
-- **Stocks & Logistics → Transfers**: one receipt; **BTP Site** is empty.  
-- **Fireproof mortar** on-hand increases by 100 kg.
-
-### 6.2 Outflows — Delivery linked to BTP site (F3, F4)
-
-**Steps**
-
-1. **Quotes & Articles → Quotes** → **New**.  
-2. Customer = **Demo Building Corp**. Add a line: Product = **Fireproof mortar**, Quantity = 20, Unit Price = 15. Save.  
-3. **Confirm** the order; when asked to create a site, confirm so **BTP Site** = Tour La Défense – Flocking.  
-4. **Stocks & Logistics → Transfers**: open the **delivery** for this order.  
-5. **Check Availability** → **Validate**.
-
-**Expected**
-
-- Transfer (delivery) shows **BTP Site** = Tour La Défense – Flocking.  
-- Each move has **Site** = Tour La Défense – Flocking, **BTP Origin** = **Client Order**.  
-- Fireproof mortar on-hand decreases by 20 kg.
-
-### 6.3 Internal transfer to site depot (F7)
-
-**Steps**
-
-1. **Stocks & Logistics → Transfers** → **New**.  
-2. Operation type = **Internal Transfer** (or From = WH/Stock, To = **Site 202501001 depot**).  
-3. Add a line: Product = **Mineral wool 100mm**, Demand = 10 m².  
-4. In the **Operations** tab on the same transfer form (the list "Stock Moves" with "Add a Product"), set **Site** and **BTP Origin** on the line: **Site** = Tour La Défense – Flocking, **BTP Origin** = **Internal Transfer**. If the **Site** or **BTP Origin** columns are not visible, use the column chooser (➕ or "Columns" at the right of the column headers) and enable them.  
-   - **Do not** use the "Moves" / "Detailed Operations" button in the button box — that opens a different view (detailed move lines) where BTP fields are not available.  
-5. **Validate**.
-
-**Expected**
-
-- **Stocks & Logistics → Moves**: filter by **BTP Site** = Tour La Défense – Flocking; one move with destination = Site 202501001 depot, **BTP Origin** = Internal Transfer.
+Without this, auto-procurement on shortage is not expected.
 
 ---
 
-## 7. Site Consumptions (F5, F6)
+## 5) Navigation Map
 
-### 7.1 Create consumption and see variance / overconsumption (F5)
+- `BTP Prospecting -> Stocks & Logistics -> Transfers`
+- `BTP Prospecting -> Stocks & Logistics -> Moves`
+- `BTP Prospecting -> Stocks & Logistics -> Consumptions`
+- `BTP Prospecting -> Stocks & Logistics -> Products (Stock)`
+- `Inventory -> Configuration -> Warehouses`
+- `Inventory -> Configuration -> Locations`
+- `Inventory -> Operations -> Physical Inventory`
 
-**Steps**
+---
 
-1. **Stocks & Logistics → Consumptions** (or **Sites & Documents → Planning & Yield → Consumptions**) → **New**.  
-2. **Site** = Tour La Défense – Flocking, **Article** = **Fixing paste** (or Fireproof mortar), **Planned Quantity** = 250, **Actual Quantity** = 300.  
+## 5.1) Where is the “Order” and Where do I set “Site”?
+
+**Where is the order?**
+- The “order” in S1 is the **BTP Quote** (sale order).
+- **Menu path:** **BTP Prospecting → Quotes & Articles → Quotes**.
+- From the list, click **New** to create a quote, or open an existing one. The form you see is the **order/quote form**.
+
+**Where is the Site field on the order?**
+- On the **quote form**, the **Site** field is in the **top header area**, on the **same row as the quote name/reference** (the “Order Reference” or document name).
+- It appears **right after** the fields: Quote Number (if any) and Revision (if any). The label is **“Site”**; the value is a dropdown of BTP sites (projects).
+- If you do not see it: scroll the header left/right, or ensure you are on the **BTP Quotes** action (not the standard Sales → Orders). The field is always visible so you can set or change the site before confirming.
+
+**How to set Site to “Tour La Defense - Flocking”:**
+1. Go to **BTP Prospecting → Quotes & Articles → Quotes** and open your quote (or create one).
+2. In the **header** of the form, find the **Site** dropdown (same row as the quote name).
+3. Click the field and select **Tour La Defense - Flocking**. If that site does not exist, create it first from **BTP Prospecting → Sites & Documents → Sites**.
+4. Save the quote, then confirm the order. The delivery and stock moves will then carry this site for traceability.
+
+---
+
+## 6) Evidence Rules (How to Prove a Scenario Passed)
+
+For each scenario capture:
+1. One screenshot of input/action screen.
+2. One screenshot of result screen.
+3. Written output values:
+   - quantities before/after,
+   - movement reference,
+   - traceability values (`BTP Site`, `BTP Origin`).
+
+Mark result:
+- PASS
+- FAIL
+- BLOCKED (with reason)
+
+---
+
+## 6.1) Quick Terms (for non-purchasing users)
+
+- **PO** = **Purchase Order** (an order you send to a supplier/vendor to buy products).
+- **Receipt** = incoming transfer generated by a confirmed PO, used to register received quantities in stock.
+- **Vendor** = supplier partner used on the PO.
+
+---
+
+## 7) Detailed UAT Scenarios
+
+---
+
+## S1 - Automatic Reservation on Client Order (Deep Test)
+
+### Goal
+Validate reservation + site traceability on delivery moves generated from sale flow.
+
+### Preconditions
+- Product `Fireproof mortar` has on-hand >= 120 kg.
+- A BTP site exists and is linked to the order.
+- The product is added in the quote's **Order Lines** (standard sale line), not only in BTP quote structure (Lot/Title/Subtitle/Item articles).
+
+### Steps
+1. Open **BTP Prospecting → Quotes & Articles → Quotes** and click **New**.
+2. In the quote **Order Lines** section, set:
+   - Customer = `Demo Building Corp`
+   - Order line product = `Fireproof mortar`
+   - Quantity = `120`
+3. Save the quote.
+4. In the **header** of the quote form (same row as the quote name), find the **Site** dropdown and set it to **Tour La Defense - Flocking**. Save again if needed.
+5. Confirm the order.
+6. Open the generated **delivery transfer** (e.g. from the order’s **Delivery** smart button or from **Inventory → Operations → Transfers**).
+7. On the transfer, click **Check Availability**.
+8. Open the **Operations** tab and verify the product move line exists.
+9. Optional: click **Detailed Operations** only after reservation. If tracking is not required, this view can be empty and this is not a failure by itself.
+10. Open the move line from **Operations** and check **BTP Site** and **BTP Origin**.
+
+### Expected Result
+- Reserved quantity = 120.
+- Move has `BTP Site = Tour La Defense - Flocking`.
+- Move has `BTP Origin = Client Order`.
+- Stock decreases only after validate, not at reservation stage.
+
+### Failure Diagnostics
+- If no reservation: check stock, route, product type (must be storable).
+- If no BTP site: verify order `Site` and move propagation.
+- If no origin: verify move metadata and inheritance settings.
+- If delivery has no product row: verify the item was created in **Order Lines** and not only as BTP quote structure articles.
+- If **Detailed Operations** is empty but **Operations** has rows: this is expected until move lines are generated by reservation/tracking.
+
+### Evidence to Capture
+- Delivery screen showing reservation.
+- Move form/list showing `BTP Site` + `BTP Origin`.
+- Product stock before/after validation.
+
+### Pass Rule
+Pass only if reservation quantity and movement traceability are both correct.
+
+---
+
+## S2 - Supplier Inflow Receipt
+
+### Goal
+Validate incoming flow and movement traceability.
+
+### Preconditions
+- Purchase app is installed.
+- Your user has Purchase rights (`Purchase User` or above).
+- A supplier (vendor) exists for the test.
+
+### Steps
+1. Open `Purchase -> Orders -> Purchase Orders`.
+2. Click `New`.
+3. Set:
+   - Vendor = your supplier (example: `Demo Supplier SAS`)
+   - Product = `Mineral wool 100mm`
+   - Quantity = `50`
+4. Save, then click `Confirm Order`.
+5. On the PO, click smart button `Receive Products` (or `Receipt` depending on UI label).
+6. In the receipt transfer:
+   - verify product line exists,
+   - set done quantity to `50` if needed,
+   - click `Validate`.
+7. Open the resulting move from the transfer `Operations` lines and verify traceability fields.
+8. Optional alternative path to receipt:
+   - `Inventory -> Operations -> Transfers`,
+   - filter on transfer type = `Receipts`,
+   - open the one linked to your PO reference.
+
+### Expected
+- On-hand increases by 50.
+- `BTP Origin` should be set/inferable to supplier flow where metadata exists.
+- Transfer state becomes `Done` after validation.
+
+### Failure Checks
+- Wrong stock: check done quantity vs demand quantity.
+- Missing origin: verify picking type and purchase links.
+- Cannot find Purchase menu: install Purchase app or update access rights.
+- No receipt button on PO: check PO is confirmed and operation type is configured.
+
+---
+
+## S3 - Internal Transfer HQ -> Site Depot
+
+### Goal
+Validate internal transfer traceability.
+
+### Preconditions
+- Source warehouse/location has available stock (`WH/Stock`).
+- Site depot location exists and is linked to the site (`SITE-202501001/Depot` with `Site (BTP)` set).
+- User has Inventory operation rights.
+
+### Steps
+1. Open `Inventory -> Operations -> Transfers`.
+2. Click `New`.
+3. Set transfer type to **Internal Transfer**.
+4. Set locations:
+   - `Source Location` = `WH/Stock`
+   - `Destination Location` = `SITE-202501001/Depot`
+5. Add operation line:
+   - `Product` = `Mineral wool 100mm`
+   - `Demand Quantity` = `20`
+6. Save transfer.
+7. Click `Check Availability` (if needed), then `Validate`.
+8. Open the move line from `Operations` and review BTP fields.
+
+### Expected
+- Destination location is site depot.
+- `BTP Site` present (from location or move context).
+- `BTP Origin` is `Internal Transfer` (manual or inferred).
+- Transfer state becomes `Done`.
+
+### Failure Checks
+- Missing site: verify destination location has `Site (BTP)`.
+- Missing origin: set manually in operations and retest.
+- Reservation issue: check on-hand in source location and operation type.
+
+### Evidence to Capture
+- Transfer form with source/destination and product line.
+- Move form/list showing `BTP Site` and `BTP Origin`.
+- Product stock before/after transfer.
+
+---
+
+## S4 - Site Consumption With Overconsumption Alert
+
+### Goal
+Validate deviation and alert logic.
+
+### Steps
+1. Open `Stocks & Logistics -> Consumptions`.
+2. Create record:
+   - Site = Tour La Defense - Flocking
+   - **Article (Product)** = Fireproof mortar
+   - Quote Item = optional for this scenario (you can leave it empty)
+   - Planned = 250
+   - Actual = 300
 3. Save.
 
-**Expected**
+### Expected
+- Variance = +50.
+- `Overconsumption Alert = True`.
 
-- **Variance** = 50 (300 − 250).  
-- **Overconsumption Alert** = Yes (toggle on).  
-- In list view you can sort/filter by **Overconsumption Alert** to find such lines.
-
-### 7.2 Create outbound move from consumption (F6)
-
-**Steps**
-
-1. **Consumptions** → **New**.  
-2. **Site** = Tour La Défense – Flocking, **Article** = **Fireproof mortar** (storable), **Planned Quantity** = 25, **Actual Quantity** = 0 or 25. Save.  
-3. On the form, in the **Stock** section (below Variance / Overconsumption Alert), click **Create Outbound Move**.  
-4. You are redirected to the new **stock move**. On the move (or via Transfers): **Confirm** → **Validate** (or process the picking).  
-5. Reopen the **consumption** record.
-
-**Expected**
-
-- **Stock Move** is filled with the created move.  
-- **Actual Quantity** = 25 (updated when the move was validated).  
-- **Stocks & Logistics → Moves**: filter **BTP Origin** = **Site Consumption**; one move with **Site Consumption** = your consumption line.
-
-**When the button is hidden / errors**
-
-- **Create Outbound Move** appears in the **Stock** section whenever **Stock Move** is empty. If the article is **Consumable**, the button is still shown but the server will show an error if you click it; use a **Storable** article to deduct stock.
+### Failure Checks
+- Wrong variance: verify planned/actual values and save state.
+- No alert: verify planned > 0 and variance > 0.
+- Cannot find Product field: on this form the field label is **Article** (same meaning here).
+- `Quote Item` has no matching value: expected if no quote structure item exists; S4 does not require Quote Item.
 
 ---
 
-## 8. Inventories & Valuation (F8)
+## S5 - Planned Quantity Auto-Fill from Quote Item (New Fix Validation)
 
-### 8.1 Physical inventory
+### Goal
+Validate forecast linkage from quote item article lines.
 
-**Steps**
+### Preconditions
+- A quote item exists with article line:
+  - Article = Fireproof mortar
+  - Quantity = 180
+- The article exists as product variant selectable in consumption (`Product (Article)`).
 
-1. **Inventory** → **Adjustments** → **Physical Inventory** (or Count).  
-2. Location = WH/Stock (or Site 202501001 depot). Add line: Product = **Fireproof mortar**, **Counted Quantity** = 95 (e.g. if theoretical was 100).  
-3. **Apply** / **Validate**.
+### Steps
+1. Create consumption record:
+   - Quote Item = matching item
+   - Product (Article) = Fireproof mortar
+   - Planned qty left empty
+2. Save.
+3. Reopen the record and verify calculated values.
 
-**Expected**
+### Expected
+- Planned qty auto-filled to 180.
+- Variance and alert logic are computed using auto-filled planned qty.
 
-- An adjustment move is created; **Fireproof mortar** on-hand = 95.  
-- Valuation uses Odoo standard (FIFO / standard cost). No BTP-specific change.
+### Negative Variant
+1. Create another consumption with same quote item but non-matching product.
+2. Keep planned qty empty and save.
+3. Expected: planned qty stays empty/default (no forced wrong value).
 
----
+### Evidence to Capture
+- Record with matching quote item/product showing auto-filled planned qty.
+- Record with non-matching product showing no auto-fill.
 
-## 9. Reports & KPIs (F9)
-
-| What you want | Where to go | What to do |
-|---------------|-------------|------------|
-| **Stock by warehouse/location** | **Stocks & Logistics → Products (Stock)** or Inventory → Reporting | Filter by product/location; use **Site** on locations for site depots. |
-| **Reserved vs available** | Product form or Moves list | Standard Odoo **Forecasted** / **Reserved**. |
-| **Consumption by site** | **Consumptions** → switch to **Pivot** | Group by **Site** and/or **Article**; measures **Actual Quantity**, **Planned Quantity**, **Variance**. |
-| **Moves by site** | **Stocks & Logistics → Moves** | Filter **BTP Site** or group by **BTP Site** / **BTP Origin**. |
-| **Stock valuation** | Inventory reporting | Standard valuation report (FIFO/standard). |
-
----
-
-## 10. UI Guidelines & Expected Behavior
-
-### 10.1 Transfers (pickings)
-
-- **List**: Columns include **Partner**, **Origin**, **BTP Site** (optional; show via column chooser for BTP users).  
-- **Form**: After **Origin**, **BTP Site** is shown (from first move with a site).  
-- **Behavior**: BTP Site on the transfer is computed from its moves; do not edit it on the transfer, set it on the moves if needed.
-
-### 10.2 Moves
-
-- **List**: Optional columns **Site**, **BTP Origin**.  
-- **Search**: Filter **"BTP Site"** = moves that have a site.  
-- **Form**: **BTP** group: **Site**, **BTP Origin**, **Site Consumption** (readonly when from consumption).  
-- **Behavior**: For deliveries from a sale order with **BTP Site**, moves get Site and Origin = **Client Order** automatically. When a move linked to a consumption is set to **Done**, **Actual Quantity** on the consumption is updated.
-
-### 10.3 Locations
-
-- **Form**: **BTP** group with **Site** (only locations for site depots).  
-- **Behavior**: Only projects with **Site Code** appear in **Site**. Moves to/from this location can be reported by site.
-
-### 10.4 Consumptions
-
-- **List**: **Site**, **Task**, **Article**, **Planned Quantity**, **Actual Quantity**, **Unit**, **Variance**, **Overconsumption Alert** (toggle).  
-- **Form**: Same fields + **Quote Item**, **Notes**; then **Stock**: **Stock Move** (readonly), button **Create Outbound Move** (when no move linked; storable articles only for deduction).  
-- **Behavior**: Variance = Actual − Planned; Overconsumption Alert = True when Planned > 0 and Variance > 0.  
-- **Create Outbound Move**: Creates a move (warehouse stock → site depot or scrap), sets **BTP Origin** = Site Consumption and links **Site Consumption** to this line. After the move is **Done**, **Actual Quantity** is set from the move.
-
-### 10.5 BTP Origin values
-
-| Value | Meaning |
-|-------|---------|
-| Supplier Order | Incoming from purchase. |
-| Client Order | Outgoing from sale order (delivery). |
-| Site Consumption | Outbound created from a consumption line. |
-| Internal Transfer | Internal transfer (e.g. to site depot). |
-| Return to Supplier | Return from receipt. |
-| Loss / Waste | Scrap/loss. |
+### Failure Checks
+- No auto-fill on matching data: verify quote item article uses same product template.
+- Wrong auto-fill value: verify total quantity in quote item article lines.
 
 ---
 
-## 11. Acceptance Scenarios (End-to-End)
+## S6 - Outbound Move From Consumption
 
-Use the mock data above (customer Demo Building Corp, site Tour La Défense – Flocking, products Fireproof mortar / Mineral wool 100mm / Fixing paste, location Site 202501001 depot).
+### Goal
+Validate stock deduction process from consumption record.
 
-### S1 — Automatic reservation
+### Steps
+1. Create consumption for storable product with positive qty.
+2. Click `Create Outbound Move`.
+3. The system opens the created `stock.move` form.
+4. In this move form, open the **BTP** section and verify:
+   - `BTP Origin` = `Site Consumption`
+   - `Site Consumption` link (`btp_consumption_id`) points to the source consumption record
+   - `BTP Site` is set to the site
+5. Confirm/validate the move (use standard stock flow from the linked transfer if needed).
+6. Reopen the original consumption record.
+7. In the **Stock** block of the consumption form, check `Stock Move` (`stock_move_id`) now contains the linked move.
 
-1. Ensure **Fireproof mortar** on-hand ≥ 20 kg.  
-2. **Quotes** → **New** → Customer = Demo Building Corp, line Fireproof mortar qty 20, unit price 15.  
-3. **Confirm** → **Create site** when asked.  
-4. **Stocks & Logistics → Transfers** → open the delivery → **Check Availability** → **Validate**.  
-5. **Verify**: Delivery **BTP Site** = Tour La Défense – Flocking; moves **BTP Origin** = Client Order; on-hand −20 kg.
+### Expected
+- `stock_move_id` is set.
+- Move has `BTP Origin = Site Consumption`.
+- Move has `Site Consumption` link to source record.
+- `Actual Quantity` syncs from validated move quantity.
 
-### S2 — Site consumption and overconsumption
-
-1. **Consumptions** → **New** → Site = Tour La Défense – Flocking, Article = Fireproof mortar, **Planned** = 250, **Actual** = 300 → Save.  
-2. **Verify**: **Variance** = 50, **Overconsumption Alert** = Yes; in list, filter/sort by Overconsumption Alert.
-
-### S3 — Internal transfer to site depot
-
-1. **Transfers** → **New** (Internal) → From = WH/Stock, To = Site 202501001 depot.  
-2. Add move: Mineral wool 100mm, Demand = 10. Set **Site** and **BTP Origin** = Internal Transfer on the move → **Validate**.  
-3. **Verify**: **Moves** filtered by BTP Site = Tour La Défense – Flocking: one move To = Site 202501001 depot, BTP Origin = Internal Transfer.
-
-### S4 — Rolling inventory
-
-1. **Inventory → Adjustments → Physical Inventory** → Location = WH/Stock, line Fireproof mortar **Counted** = 95 → **Apply**.  
-2. **Verify**: Adjustment move created; Fireproof mortar on-hand = 95.
-
-### S5 — Create outbound from consumption
-
-1. **Consumptions** → **New** → Site = Tour La Défense – Flocking, Article = **Mineral wool 100mm** (storable), Planned = 15, Actual = 15 → Save.  
-2. **Create Outbound Move** → Confirm and Validate the move.  
-3. Reopen consumption: **Actual Quantity** = 15, **Stock Move** filled.
+### Failure Checks
+- Button error on non-storable products is expected.
+- Zero quantity should raise validation error.
 
 ---
 
-## 12. Troubleshooting
+## S7 - Return to Supplier
 
-| Problem | What to check |
-|---------|----------------|
-| **Transfers / Moves / Products (Stock) menus missing** | User needs **Inventory User** (or Manager): Settings → Users → [User] → Inventory. |
-| **Delivery moves have no BTP Site** | Sale order must have **BTP Site** set (e.g. created with "Create site" or set manually). |
-| **Create Outbound Move not visible** | Article must be **Storable** and **Stock Move** must be empty. |
-| **No warehouse** | Company must have at least one warehouse: Inventory → Configuration → Warehouses. |
-| **Outbound move goes to scrap** | If no location has **Site** = consumption’s site, the move uses company **scrap** location. Create a site depot location and set **Site** on it to use it as destination. |
-| **Consumable on quote** | Consumables do not create stock reservations; they only appear in Consumptions (planned/actual). Use storable products for reservations and outbound moves. |
-| **RPC_ERROR / TimeoutError / ClientDisconnected** | Usually a network or proxy timeout between browser and server. Retry the action; if it persists, check VPN/proxy timeouts, server load, or try a shorter path (e.g. set Site/BTP Origin in the Operations list on the transfer instead of opening many forms). |
+### Goal
+Validate return traceability and stock effect.
+
+### Preconditions
+- A supplier receipt has been validated previously (e.g., from S2).
+- Returned quantity does not exceed receipt quantity.
+
+### Steps
+1. Open `Inventory -> Operations -> Transfers`.
+2. Filter transfer type = `Receipts`, state = `Done`.
+3. Open the validated receipt to return.
+4. Click `Return`.
+5. In return wizard:
+   - keep or set return qty (example `10`),
+   - confirm return creation.
+6. Open generated return transfer.
+7. Validate return transfer.
+8. Open resulting move line and inspect BTP fields.
+
+### Expected
+- On-hand decreases accordingly.
+- Return flow traceability present where return links exist.
+- Return transfer is linked to original receipt.
+
+### Evidence to Capture
+- Return wizard showing product/qty.
+- Return transfer in `Done` state.
+- Move details showing return context and quantities.
+
+### Failure Checks
+- Return button unavailable: receipt may not be done.
+- Wrong qty impact: verify returned quantity and UoM.
 
 ---
 
-## 13. Quick Reference — Key Fields
+## S8 - Loss/Waste (Scrap) Flow
 
-| Model | Field | Meaning |
-|-------|--------|--------|
-| **stock.location** | Site (btp_site_id) | Site when location is a site depot. |
-| **stock.move** | Site (btp_site_id) | Site concerned by the move. |
-| **stock.move** | BTP Origin (btp_origin_type) | supplier_order / client_order / site_consumption / transfer / return / loss. |
-| **stock.move** | Site Consumption (btp_consumption_id) | Consumption line when origin = site_consumption. |
-| **stock.picking** | BTP Site (btp_site_id) | Computed from first move with a site. |
-| **btp.site.consumption** | Stock Move (stock_move_id) | Outbound move created from this consumption. |
+### Goal
+Validate waste declaration impact and traceability.
+
+### Preconditions
+- Product is **storable** (Track Inventory enabled).
+- On-hand quantity exists in source location (example: `WH/Stock`).
+- User has Inventory rights.
+
+### Steps
+1. Open **Inventory -> Operations -> Scrap** (menu label can be `Scrap` or `Scrap Orders`).
+2. Click `New`.
+3. Fill the scrap form:
+   - `Product` = your storable product (example: `Fireproof mortar`)
+   - `Quantity` = example `5`
+   - `Source Location` = where stock currently exists (example: `WH/Stock`)
+   - `Scrap Location` = default scrap location (keep default unless testing special location)
+4. Click `Validate` / `Scrap Products`.
+5. Open the related stock move:
+   - from scrap form smart button or linked move,
+   - or from `Stocks & Logistics -> Moves` by filtering reference/product/date.
+6. Verify traceability on that move:
+   - `BTP Origin` should be `Loss / Waste` (when inferable),
+   - `BTP Site` is set if site can be inferred from locations/context.
+7. Validate on-hand change:
+   - open product forecast/on-hand and confirm quantity decreased by scrap qty.
+
+### Alternative Entry Point (from transfer)
+1. Open an existing transfer (`Inventory -> Operations -> Transfers`).
+2. Use action `Scrap` on the transfer.
+3. Fill product/qty and validate.
+4. Verify move and stock exactly as above.
+
+### Expected
+- Stock decreases.
+- Loss context traceability is present when inferable from scrap destination.
+
+### Failure Checks
+- Cannot validate scrap: check available stock in source location.
+- No `BTP Origin` value: confirm you are reviewing the **stock move** created by scrap and not unrelated moves.
+- No menu `Scrap`: check Inventory app/rights.
 
 ---
 
-## 14. Summary Checklist
+## S9 - Shortage -> Replenishment Procurement
 
-- [ ] Warehouses and locations exist; site depots have **Site** (BTP) set on the location.  
-- [ ] Products used for stock are **Storable**; consumables are only in consumptions.  
-- [ ] Quote/order has **BTP Site** so delivery moves get **BTP Site** and **BTP Origin** = Client Order.  
-- [ ] Consumptions have **Planned** and **Actual**; for storable products use **Create Outbound Move** when you want to deduct stock.  
-- [ ] Transfers and Moves show **BTP Site** / **BTP Origin** where relevant; use filters and Pivot for traceability and KPIs.
+### Goal
+Validate shortage behavior per specification.
+
+### Preconditions
+- Replenishment routes configured (section 4.3).
+- Purchase app installed and user has purchase rights.
+- Vendor defined on the tested product.
+
+### Test Variant A - Reordering Rule (Min/Max)
+
+#### Setup
+1. Open `Inventory -> Products -> Products`, open `Fireproof mortar`.
+2. Ensure:
+   - Product is storable (Track Inventory enabled),
+   - at least one vendor is set.
+3. Open `Inventory -> Operations -> Replenishment` (or `Inventory -> Configuration -> Reordering Rules`).
+4. Create/update rule for product in warehouse `WH`:
+   - Min = `10`
+   - Max = `50`
+   - To Order Multiple = optional (example `10`)
+
+#### Execution
+1. Force shortage so forecast goes below Min:
+   - either make an outgoing transfer,
+   - or create/confirm a sales order that consumes available stock.
+2. Open `Inventory -> Operations -> Replenishment`.
+3. Run replenishment (`Order Once`, `Order to Max`, or scheduler depending on UI).
+4. Open created procurement document.
+
+#### Expected (Variant A)
+- A replenishment proposal is generated.
+- RFQ/Purchase Order is created for qty needed to reach rule target.
+- Document contains correct product, warehouse/company, and vendor.
+
+### Test Variant B - MTO + Buy (Demand-driven)
+
+#### Setup
+1. On product `Fireproof mortar`, enable routes:
+   - `Replenish on Order (MTO)`,
+   - `Buy`.
+2. Ensure vendor is configured and product is purchasable.
+
+#### Execution
+1. Set on-hand to low/zero.
+2. Create and confirm a sales order with qty above available stock.
+3. Open smart buttons from SO (Procurement / Purchase / Delivery depending on UI).
+4. Open linked RFQ/PO.
+
+#### Expected (Variant B)
+- Confirming SO triggers linked procurement.
+- RFQ/PO is created from SO demand (not from min/max rule).
+- Quantity aligns with shortage/demand logic.
+
+### Verification Checklist
+- [ ] At least one RFQ/PO is generated after shortage trigger.
+- [ ] RFQ/PO has correct product and quantity.
+- [ ] Company/warehouse context is correct.
+- [ ] No silent failure in scheduler/replenishment screen.
+
+### Failure Checks
+- No RFQ/PO created: verify routes, vendor, product type, and user rights.
+- Scheduler runs but nothing happens: check that shortage condition is actually met.
+- Wrong vendor selected: verify vendor priority and purchase settings on product.
+- Cross-company mismatch: verify active company and warehouse company.
+
+### Important
+- If routes are not configured, this scenario is **CONFIG-FAIL**, not code failure.
+- Execute either Variant A or Variant B (prefer both for full UAT coverage).
+
+---
+
+## S10 - Rolling Inventory Count
+
+### Goal
+Validate periodic counting process.
+
+### Preconditions
+- Inventory rights available.
+- Product has on-hand quantity in target warehouse/location.
+- No conflicting open transfer for same product/location (recommended to validate/close pending transfers first).
+
+### Steps (Cycle Count - Single Product Example)
+1. Open `Inventory -> Operations -> Physical Inventory` (or `Inventory Adjustments` depending on UI).
+2. Click `New` inventory line (or create from inventory adjustment form).
+3. Fill:
+   - `Product` = `Fireproof mortar`
+   - `Location` = `WH/Stock` (or chosen count location)
+   - `Counted Quantity` = value intentionally different from system (example: if theoretical is 120, enter 117)
+4. Save line.
+5. Click `Apply` / `Validate` adjustment.
+6. Reopen the same inventory line (or product stock card) and verify quantities.
+7. Open product forecast (`Inventory -> Products -> Products -> Fireproof mortar -> Forecasted`) to confirm final on-hand.
+
+### What to Verify (Exact Checks)
+- `Theoretical Quantity` before apply is the previous system value.
+- `Counted Quantity` is your entered physical count.
+- After apply, on-hand equals counted quantity.
+- Adjustment entry is recorded in history (inventory adjustment/move history).
+
+### Expected
+- Adjustment is posted successfully (no blocking error).
+- On-hand equals counted quantity after apply.
+- Inventory history is auditable (who counted, when, where, product, delta).
+
+### Evidence to Capture
+- Screenshot before apply (showing theoretical vs counted values).
+- Screenshot after apply (showing updated on-hand).
+- Screenshot of adjustment history/move line.
+
+### Failure Checks
+- Apply blocked: verify user rights and location/company access.
+- On-hand not updated: ensure adjustment was actually applied (not only saved in draft).
+- Unexpected delta: check pending incoming/outgoing moves for same product/location at count time.
+- Product not found in count screen: verify product is storable and in active company context.
+
+---
+
+## S11 - Full Inventory Campaign
+
+### Goal
+Validate end-period full count behavior.
+
+### Preconditions
+- Inventory rights available.
+- Scope list defined (warehouses, locations, product categories).
+- Counting period frozen or controlled (recommended) to avoid concurrent stock noise.
+
+### Steps
+1. Open `Inventory -> Operations -> Physical Inventory`.
+2. Build count lines for all in-scope products/locations (bulk import or manual lines).
+3. For each line, enter `Counted Quantity`.
+4. Review outliers (large variance lines) before apply.
+5. Apply/Validate all lines.
+6. Reopen inventory list and check remaining statuses.
+7. Export results for audit package (optional but recommended).
+
+### Expected
+- All campaign lines are applied.
+- No pending draft count lines remain in campaign scope.
+- Full adjustment history is available and auditable.
+
+### Evidence to Capture
+- Campaign list before apply (draft lines).
+- Campaign list after apply (applied/done).
+- Export or screenshot of variance lines and final history.
+
+### Failure Checks
+- Some lines remain pending: filter by status and resolve validation errors.
+- Inconsistent totals: check open transfers during counting window.
+
+---
+
+## S12 - FIFO Valuation Verification
+
+### Goal
+Validate FIFO valuation path.
+
+### Preconditions
+- Product category valuation configured to FIFO and automated valuation where accounting checks are required.
+- Product is storable and tracked in inventory.
+- `Accounting`/`stock_account` features available (for valuation controls).
+- User has at least Stock Manager rights (and accounting read rights when valuation entries are reviewed).
+
+### Steps
+1. Configure category:
+   - Open `Inventory -> Configuration -> Product Categories`.
+   - Click a category row (example: `Goods`) to open the **form view** (not list).
+   - In the category form, find section **Inventory Valuation**.
+   - Set `Costing Method = FIFO`.
+   - Save.
+2. If `Costing Method` is not visible:
+   - verify you are inside the **category form** (not the category list),
+   - install/enable `Accounting` app (stock valuation features),
+   - verify user groups (Stock Manager / accounting access),
+   - refresh and reopen the category form.
+3. Create PO #1 for product (example qty 10 at unit cost 100), receive and validate.
+4. Create PO #2 for same product (example qty 10 at unit cost 120), receive and validate.
+5. Create outbound move/sale delivery for qty 12, validate.
+6. Open valuation layers/journal entries for this product and sequence.
+
+### Expected
+- First 10 units consumed at first incoming cost, remaining 2 units at second incoming cost.
+- Outgoing valuation follows FIFO order of receipts.
+
+### Evidence to Capture
+- Two receipts with different costs.
+- Outgoing movement qty.
+- Valuation lines proving FIFO consumption order.
+
+### Failure Checks
+- Flat/average valuation result: verify category is really FIFO at transaction time.
+- Missing valuation entries: verify valuation mode and accounting integration settings.
+
+---
+
+## S13 - Standard Cost Verification
+
+### Goal
+Validate standard costing path.
+
+### Preconditions
+- Product category uses `Costing Method = Standard Price`.
+- Standard price set on product before test transactions.
+
+### Steps
+1. Open product category and set standard costing.
+2. Open product and set `Cost` (standard price), example 95.
+3. Execute one incoming transaction (receipt) and one outgoing transaction (delivery).
+4. Open valuation entries for both moves.
+5. Compare outgoing value against standard price * qty.
+
+### Expected
+- Outgoing valuation uses standard price logic (not FIFO layer sequence).
+- Variance behavior (if configured) follows accounting policy.
+
+### Evidence to Capture
+- Product standard cost value.
+- Incoming/outgoing transactions.
+- Valuation entries proving standard-cost-based outgoing value.
+
+### Failure Checks
+- Outgoing appears FIFO: re-check product category at transaction timestamps.
+- Unexpected amounts: verify UoM conversion and currency rounding.
+
+---
+
+## S14 - Multi-Warehouse Reporting by Site
+
+### Goal
+Validate operational reporting quality.
+
+### Preconditions
+- Transactions from S1-S10 exist in at least two warehouses/locations.
+- BTP traceability fields populated on tested moves.
+
+### Steps
+1. Open `BTP Prospecting -> Stocks & Logistics -> Products (Stock)`.
+2. Group by `Location`, then by `Product` (or inverse).
+3. Filter for site depot locations (e.g., names containing `SITE-`).
+4. Open `BTP Prospecting -> Stocks & Logistics -> Moves`.
+5. Group by `BTP Site`, then `BTP Origin`.
+6. Apply date filter for UAT period.
+7. Compare totals with known scenario quantities (S1/S3/S6/S8).
+
+### Expected
+- Totals are consistent with scenario transactions.
+- Grouping by `BTP Site` and `BTP Origin` yields meaningful operational segmentation.
+
+### Evidence to Capture
+- Grouped products-by-location view.
+- Grouped moves-by-site/origin view.
+- Manual reconciliation note versus scenario quantities.
+
+### Failure Checks
+- Empty BTP grouping: verify BTP fields exist on moves.
+- Totals mismatch: check date filters, company context, and cancelled moves.
+
+---
+
+## S15 - Stress/Edge Cases
+
+### Goal
+Validate resilience and guardrail behavior under non-happy-path conditions.
+
+### Case 1 - Non-storable product outbound from consumption
+- Steps:
+  1. Create consumption with product having Track Inventory disabled.
+  2. Click `Create Outbound Move`.
+- Expected:
+  - Action is blocked with validation error about storable product requirement.
+
+### Case 2 - Zero quantity consumption outbound
+- Steps:
+  1. Create consumption with `planned = 0` and `actual = 0`.
+  2. Click `Create Outbound Move`.
+- Expected:
+  - Action is blocked with positive-quantity validation message.
+
+### Case 3 - Internal transfer to non-site destination
+- Steps:
+  1. Create internal transfer from `WH/Stock` to regular non-site location.
+  2. Validate and inspect move.
+- Expected:
+  - No incorrect forced site assignment.
+  - `BTP Site` remains empty unless inferable from legitimate context.
+
+### Case 4 - Multi-company isolation
+- Steps:
+  1. Log in as user in Company A and create/inspect stock records.
+  2. Switch to Company B user/context.
+  3. Open same menus (`Moves`, `Consumptions`, `Transfers`).
+- Expected:
+  - No cross-company data leakage.
+  - Record visibility follows company rules.
+
+### Evidence to Capture
+- One screenshot per case with triggered result/error.
+- Optional audit table listing case, expected, actual, and pass/fail.
+
+---
+
+## 8) KPI Validation Checklist (Operational Sign-Off)
+
+- [ ] Available stock by warehouse/location is accurate.
+- [ ] Reserved vs available quantities are coherent.
+- [ ] Consumption by site/product is available in pivot.
+- [ ] Overconsumption records are filterable.
+- [ ] Inventory deviation records are auditable.
+- [ ] Valuation checks pass for FIFO and Standard tests.
+- [ ] Movement traceability fields are populated on tested flows.
+
+---
+
+## 9) Troubleshooting Matrix
+
+| Symptom | Root Cause | What to check |
+|---|---|---|
+| Reservation not created | Product/config issue | Product type, stock level, route |
+| BTP Site empty on move | No source context | Order site, location site, picking/move fields |
+| BTP Origin empty | Missing inferable metadata | Picking type, purchase/sale links, manual override |
+| No auto PO on shortage | Replenishment not configured | Buy route, vendor, MTO/reordering |
+| Outbound button error | Invalid consumption payload | Product not storable or qty <= 0 |
+| Inventory mismatch | Pending operations | Validate open transfers then recount |
+
+---
+
+## 10) Final Acceptance Form
+
+Tester name:
+
+Company:
+
+Environment:
+
+Date:
+
+Scenarios executed: S1-S15 (circle): PASS / FAIL / BLOCKED
+
+Open defects:
+
+Decision:
+- GO-LIVE READY
+- CONDITIONAL GO-LIVE
+- NOT READY
+
+Signatures:
+- Functional Lead
+- Inventory Lead
+- Project Manager
+
+---
+
+## 11) Optional Hardening Recommendations
+
+1. Add configurable threshold alerts for inventory variance.
+2. Add dedicated stock rotation dashboard/report action.
+3. Add automated tests for:
+   - traceability backfill on `stock.move`,
+   - planned qty auto-default in `btp.site.consumption`,
+   - replenishment behavior under configured routes.
