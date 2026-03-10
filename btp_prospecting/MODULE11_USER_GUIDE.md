@@ -1,243 +1,318 @@
-# Module 11 — Reports & Exports — User & Testing Guide
+# Module 11 - Reports & Exports
 
-This guide helps you **test Module 11 manually**: where to find report templates, how to generate and export reports (PDF, Excel, CSV), and how to schedule and send them by email. It is based on the current BTP Prospecting implementation (Odoo 19).
+## Detailed Functional Guide + Full UAT Playbook (Odoo 19)
 
----
-
-## 1. What Module 11 Does (Summary)
-
-
-| Goal                     | What the system does                                                                                                                                                                    |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Report templates**     | Define reusable reports with scope (e.g. Leads & Quotes by Salesperson, Site Progress, QHSE Incidents), period/company filters, output format (PDF, Excel, CSV), and optional schedule. |
-| **On-demand generation** | Run a report from its form (Generate / Generate and Send by Email); file is created and stored; optionally emailed to selected users.                                                   |
-| **Export history**       | Each run creates an Export Job (run date, status, download link); history is visible per template and in the global Export History list.                                                |
-| **Scheduled reports**    | Daily, weekly, or monthly: a cron runs due templates and sends the generated file by email to the template’s recipients.                                                                |
-| **Formats**              | PDF (QWeb), Excel (.xlsx, requires `xlsxwriter`), CSV (UTF-8 with BOM for Excel).                                                                                                       |
-
+This guide is a client-delivery UAT document for Module 11.
+It is written for key users, management, controllers, and testers.
 
 ---
 
-## 2. Feature List (What You Can Test)
+## 1) Objective and Scope
 
+Module 11 provides:
 
-| #   | Feature                                                                                      | Where to test                                                            | Section |
-| --- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------- |
-| F1  | **Create report template** — Name, scope, format, filters, recipients                        | Reports & Exports → Report Templates → New                               | 5.1     |
-| F2  | **Generate report (no email)** — PDF/Excel/CSV, download from Export Job                     | Template form → Generate (no email)                                      | 5.2     |
-| F3  | **Generate and send by email** — Same + email to recipients                                  | Template form → Generate and Send by Email                               | 5.3     |
-| F4  | **Export History** — List of runs, status, download                                          | Reports & Exports → Export History                                       | 5.4     |
-| F5  | **Scheduled reports** — Daily / Weekly / Monthly; cron sends email                           | Template: Schedule = Daily/Weekly/Monthly; wait for cron or run manually | 5.5     |
-| F6  | **Scopes** — Commercial, Site, Client, Salesperson, Article, Supplier, QHSE, Margin combined | Template form → Scope                                                    | 4       |
-
+- Reusable report templates by business domain (commercial, sites, logistics, QHSE, supplier, governance).
+- Single-click export to PDF, Excel, CSV.
+- Scheduled generation and automatic email dispatch.
+- Export traceability with execution status and downloadable files.
+- Combined analytical scopes (cross dimensions: geography, site + supplier, salesperson + client).
 
 ---
 
-## 3. Where to Find Everything (UI Navigation)
+## 2) Requirement-to-Implementation Matrix
 
-### 3.1 BTP menu: Reports & Exports
-
-
-| Menu path                                                  | What you see                                      | Access                                                        |
-| ---------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------- |
-| **BTP Prospecting → Reports & Exports → Report Templates** | List and form of report templates.                | BTP Salesperson+ (create/run); Manager/Admin delete.          |
-| **BTP Prospecting → Reports & Exports → Export History**   | All export jobs (report, date, status, download). | BTP Salesperson+ (read/create via run); Manager/Admin delete. |
-
-
-### 3.2 From a report template
-
-
-| Where                                          | What                                                                  |
-| ---------------------------------------------- | --------------------------------------------------------------------- |
-| Template form → **Generate and Send by Email** | Generates report, creates Export Job, sends file to Email Recipients. |
-| Template form → **Generate (no email)**        | Generates report and creates Export Job; no email.                    |
-| Template form → **Exports** stat button        | Opens Export History filtered by this template.                       |
-| Template form → **Export History** tab         | Inline list of export jobs for this template.                         |
-
-
-### 3.3 Access rights
-
-- **Report template**: Salesperson read/create/write; Manager/Admin can delete.
-- **Export job**: Salesperson read/create/write (from running a template); Manager/Admin can delete.
+| Requirement | Status | Current implementation |
+| --- | --- | --- |
+| Complete reporting framework by domain | Implemented | `btp.report.template` with multi-scope data providers |
+| Standard reports (site/client/salesperson/article/supplier/QHSE) | Implemented | Dedicated scope methods in report template model |
+| Additional reports (lot/employee/team/rotation) | Implemented | Added lot cost report, employee productivity, team performance, article rotation |
+| Combined analytical reports | Implemented | Added geo-commercial, article+site+supplier, margin by salesperson+client |
+| PDF / Excel / CSV export | Implemented | QWeb PDF + xlsxwriter + CSV renderer |
+| Scheduled sending (daily/weekly/monthly) | Implemented | Cron: `BTP Reports: Scheduled Report Generation` |
+| Period/company/geographic filters | Implemented | `date_from`, `date_to`, `company_id`, `geographic_area` |
+| Email recipients configuration | Implemented | `recipient_user_ids` on template, restricted by company |
+| Export history and status | Implemented | `btp.export.job` + list/form + template tab |
+| Data storage inside Odoo | Implemented | Generated files stored as `ir.attachment` linked to export jobs |
 
 ---
 
-## 4. Report Scopes (Data Included)
+## 3) Menus and Navigation
 
+Main paths:
 
-| Scope                                | Content                                                                  |
-| ------------------------------------ | ------------------------------------------------------------------------ |
-| **Leads & Quotes by Salesperson**    | Quotes count, converted, total amount, leads converted per salesperson.  |
-| **Site Progress, Costs & Margins**   | Per site: quote total, invoiced, actual costs, net margin, margin %.     |
-| **Business Volume by Client**        | Orders count and total amount per client (partner).                      |
-| **Salesperson Activity**             | Leads, converted, quotes won, conversion % per user.                     |
-| **Article Consumption**              | Site, article, planned/actual quantity, variance, overconsumption alert. |
-| **Supplier / Price Analysis**        | Supplier, article, date, price, quantity from price history.             |
-| **QHSE Incidents by Site**           | Site, date, type, status, description (truncated).                       |
-| **Net Margin & Article Consumption** | Same as Site Progress (net margin by site).                              |
+- `BTP Prospecting -> Reports & Exports -> Report Templates`
+- `BTP Prospecting -> Reports & Exports -> Export History`
+- `Settings -> Technical -> Automation -> Scheduled Actions` (admin)
 
+Template form actions:
 
-Filters (optional): **From Date**, **To Date**, **Company**. Empty = no filter (all data).
+- **Generate and Send by Email**
+- **Generate (no email)**
+- **Exports** stat button (template-specific run history)
 
 ---
 
-## 5. Step-by-Step Tests
+## 4) Data Model and Key Fields
 
-### 5.1 Create a report template (F1)
+## 4.1 Report Template (`btp.report.template`)
+
+- `name`: report title
+- `scope`: report dataset type
+- `date_from`, `date_to`: period filter
+- `company_id`: company filter
+- `geographic_area`: city/zip/country text filter for geo scopes
+- `output_format`: `pdf`, `xlsx`, `csv`
+- `schedule`: `none`, `daily`, `weekly`, `monthly`
+- `recipient_user_ids`: email recipients
+- `export_job_ids`: generated run history
+
+## 4.2 Export Job (`btp.export.job`)
+
+- `report_template_id`
+- `run_date`
+- `state`: `pending`, `done`, `failed`
+- `attachment_id`: generated file
+- `error_message`
+
+---
+
+## 5) Available Report Scopes (What each scope returns)
+
+## 5.1 Standard scopes
+
+- **Leads & Quotes by Salesperson**
+- **Site Progress, Costs & Margins** (includes QHSE incident count by site)
+- **Business Volume by Client** (quotes/orders/conversion)
+- **Salesperson Activity**
+- **Article Consumption (planned vs actual)**
+- **Supplier / Price Analysis** (avg price + conformity)
+- **QHSE Incidents by Site**
+- **Net Margin & Article Consumption**
+
+## 5.2 Additional scopes
+
+- **Costs & Consumption by Quote Lot**
+- **Employee Productivity (hours, pointing, sites)**
+- **Team Performance (yield, assigned sites)**
+- **Article Rotation & Stock Movements**
+
+## 5.3 Combined analytical scopes
+
+- **Commercial Performance by Geographic Area**
+- **Article Consumption by Site & Supplier**
+- **Net Margin by Salesperson & Client**
+
+---
+
+## 6) Prerequisites for UAT
+
+Use this minimum data pack:
+
+1. Companies: at least one operating company.
+2. Users:
+   - `manager_user` with valid email.
+   - `sales_user` with valid email.
+3. Sites:
+   - `Tour La Defense - Flocking`
+   - `Demo Building Corp - 202602003`
+4. Quotes/orders with salespersons and clients.
+5. At least 2 incidents with different type/severity/site.
+6. Article consumptions (`btp.site.consumption`) for at least 2 products.
+7. Supplier price history (`btp.article.price.history`) with multiple dates.
+8. Pointing entries for at least 2 users.
+9. Optional: yield entries (`btp.site.performance`) for team report.
+
+---
+
+## 7) Detailed Acceptance Scenarios (S1-S5)
+
+## S1 - Commercial report weekly generation + Excel email
+
+**Goal**  
+Validate weekly generation and email distribution of "Leads & Quotes by Salesperson".
+
+**Preconditions**
+
+- SMTP outgoing mail server configured.
+- Recipient users have valid email.
 
 **Steps**
 
-1. **BTP Prospecting → Reports & Exports → Report Templates** → **New**.
-2. **Report Name** = e.g. "Weekly commercial activity".
-3. **Scope** = Leads & Quotes by Salesperson.
-4. **Output Format** = PDF, Excel, or CSV.
-5. **Schedule** = Manual only (or Daily / Weekly / Monthly).
-6. Optionally set **From Date** / **To Date**, **Company**, and **Email Recipients**.
-7. Save.
+1. Open `Reports & Exports -> Report Templates` and click **New**.
+2. Set:
+   - Name = `Weekly Commercial Activity`
+   - Scope = `Leads & Quotes by Salesperson`
+   - Output Format = `Excel`
+   - Schedule = `Weekly`
+   - Recipients = management users
+3. Save.
+4. Click **Generate and Send by Email**.
+5. Open generated export job from the redirected form.
+6. Download the file.
 
 **Expected**
 
-- Template is saved; Exports count = 0 until first run.
+- Export job state = **Done**.
+- Excel file contains salesperson rows and columns (quotes, converted, totals, leads converted).
+- Email is sent to configured recipients with attachment.
 
-### 5.2 Generate report (no email) (F2)
+**Evidence**
+
+- Screenshot of template config.
+- Screenshot/export job `Done`.
+- Downloaded `.xlsx` file.
+
+**Pass/Fail**
+
+- Pass only if run completes and email + attachment are both delivered.
+
+---
+
+## S2 - Site report PDF export
+
+**Goal**  
+Validate PDF generation for site-level operational report.
 
 **Steps**
 
-1. Open the template created above.
-2. Click **Generate (no email)**.
-3. You are redirected to the new **Export Job** form.
+1. Create template:
+   - Scope = `Site Progress, Costs & Margins`
+   - Output Format = `PDF`
+   - Schedule = `Manual only`
+2. Set optional period/company filter.
+3. Click **Generate (no email)**.
+4. Open export job and click **Download**.
 
 **Expected**
 
-- Export Job: Status = Done, **Generated File** set, **Run Date** = now.
-- Click **Download** to get the file (PDF, .xlsx, or .csv).
-- On the template, **Exports** stat button shows 1; Export History tab lists the job.
+- PDF is generated and downloadable.
+- Data includes site code/name, quote total, invoiced, costs, net margin, margin %, incident count.
 
-### 5.3 Generate and send by email (F3)
+**Evidence**
+
+- Export job screenshot (`Done`).
+- First page of downloaded PDF.
+
+---
+
+## S3 - Supplier analysis over 12 months (Excel)
+
+**Goal**  
+Validate supplier report for purchasing decisions.
 
 **Steps**
 
-1. On the template, set **Email Recipients** to one or more users with email addresses.
-2. Click **Generate and Send by Email**.
-3. Open the new Export Job; confirm Status = Done.
+1. Create template:
+   - Scope = `Supplier / Price Analysis`
+   - Output Format = `Excel`
+   - From Date = today - 12 months
+   - To Date = today
+2. Generate without email.
+3. Download and inspect file.
 
 **Expected**
 
-- Report is generated; an email with the file attached is sent to each recipient (check their inbox).
+- Rows by supplier/article.
+- Includes line count, average price, purchased qty, conformity status.
 
-### 5.4 Export History (F4)
+**Failure checks**
+
+- Empty output: verify price history exists in period.
+- Wrong averages: verify source prices and quantities.
+
+---
+
+## S4 - Combined report margin + article/supplier
+
+**Goal**  
+Validate multi-dimension combined analysis and CSV export.
 
 **Steps**
 
-1. **Reports & Exports → Export History**.
-2. Filter by template, status, or date if needed.
-3. Open a job with Status = Done and click **Download**.
+1. Create template:
+   - Scope = `Article Consumption by Site & Supplier`
+   - Output Format = `CSV`
+2. Generate report.
+3. Download and open CSV in Excel.
 
 **Expected**
 
-- List shows all runs; download works for successful jobs.
+- Contains Site, Article, Supplier, Planned, Actual, Variance.
+- Values match source consumptions.
 
-### 5.5 Scheduled reports (F5)
+**Optional extension**
+
+- Create second template with scope `Net Margin by Salesperson & Client` for management control.
+
+---
+
+## S5 - Monthly automation to management
+
+**Goal**  
+Validate scheduled monthly automatic generation and dispatch.
 
 **Steps**
 
-1. Create or edit a template: **Schedule** = Daily (or Weekly / Monthly), set **Email Recipients**.
-2. Save. The cron **BTP Reports: Scheduled Report Generation** runs once per day (default).
-3. **Daily**: every day; **Weekly**: Mondays; **Monthly**: 1st of the month.
-4. When due, the report is generated and sent to recipients; a new Export Job is created.
+1. Create template:
+   - Scope = `Net Margin & Article Consumption` (or `Consolidated Margin` for multi-company)
+   - Schedule = `Monthly`
+   - Recipients = general management users
+2. Save.
+3. Trigger scheduled action manually:
+   - `Settings -> Technical -> Automation -> Scheduled Actions`
+   - Run `BTP Reports: Scheduled Report Generation`
+   - **Note:** Monthly (and weekly) templates run when due by calendar *or* when they have no export in the last 31 days (monthly) / 8 days (weekly). So a new monthly template will run on first manual cron trigger and create an Export History row.
+4. Re-open template and export history.
 
 **Expected**
 
-- On the due date (after cron run), new Export Job appears and recipients receive the email. Check **Export History** and mail logs if needed.
+- New export job exists with `Done`.
+- Email sent to recipients with attached report.
+
+**Pass/Fail**
+
+- Pass only if automation creates job and sends email without manual generation button.
 
 ---
 
-## 6. Export Formats
+## 8) Manual Validation Checklist (All features)
 
-
-| Format    | File type | Notes                                                                                                       |
-| --------- | --------- | ----------------------------------------------------------------------------------------------------------- |
-| **PDF**   | .pdf      | Table report with title and headers; uses QWeb.                                                             |
-| **Excel** | .xlsx     | Table in first sheet. Requires Python library `xlsxwriter` (`pip install xlsxwriter`). If missing, use CSV. |
-| **CSV**   | .csv      | UTF-8 with BOM; open in Excel or any spreadsheet.                                                           |
-
-
----
-
-## 7. Acceptance Scenarios (Spec Module 11)
-
-### S1 — Commercial report (weekly, Excel, email)
-
-1. Create template: Name = "Leads & Quotes by Salesperson", Scope = Leads & Quotes by Salesperson, Format = Excel, Schedule = Weekly, Recipients = management user(s). Save.
-2. Click **Generate and Send by Email**.
-3. **Verify**: Export Job Done; recipients receive email with .xlsx attachment; file contains salesperson, quotes, converted, total amount, leads converted.
-
-### S2 — Site report (PDF, share with client)
-
-1. Create template: Scope = Site Progress, Costs & Margins, Format = PDF. Save.
-2. **Generate (no email)** → Download the PDF from the Export Job.
-3. **Verify**: PDF shows site code, name, quote total, invoiced, costs, net margin, margin %.
-
-### S3 — Supplier report (Excel, 12 months)
-
-1. Set **From Date** = 12 months ago, **To Date** = today on a template; Scope = Supplier / Price Analysis, Format = Excel. Save.
-2. **Generate (no email)** → Download.
-3. **Verify**: Rows show supplier, article, date, price, quantity for the period.
-
-### S4 — Combined report (margin + consumption, CSV)
-
-1. Create template: Scope = Net Margin & Article Consumption (or Site Progress), Format = CSV. Save.
-2. **Generate (no email)** → Download CSV.
-3. **Verify**: CSV opens in Excel; columns = Site, Quote Total, Invoiced, Costs, Net Margin, Margin %.
-
-### S5 — Automation (monthly, general management)
-
-1. Create template: Scope = e.g. Site Progress or Net Margin & Article Consumption, Schedule = Monthly, Recipients = general management users. Save.
-2. **Verify**: On the 1st of the next month (after cron run), Export History shows a new job and recipients receive the report by email.
+- Template can be created/edited with all filters.
+- Every required format (`PDF`, `Excel`, `CSV`) generates valid files.
+- Export history correctly tracks `pending/done/failed`.
+- Download action works for successful jobs only.
+- Scheduled cron runs and generates due templates.
+- Weekly logic = Monday; monthly logic = day 1.
+- Company-scoped recipients are respected.
+- Combined scopes return coherent data (not empty due to domain mistakes).
 
 ---
 
-## 8. Troubleshooting
+## 9) Troubleshooting Matrix
 
-
-| Problem                      | What to check                                                                                                                                          |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Report generation failed** | See Export Job **Error** field. Typical: wrong scope implementation, missing data, or (Excel) missing `xlsxwriter`.                                    |
-| **Excel format error**       | Install: `pip install xlsxwriter`. Use CSV if you cannot install it.                                                                                   |
-| **PDF template not found**   | Module data must load `btp_report_generic_reports.xml` and `btp_report_generic_templates.xml`. Upgrade the module.                                     |
-| **No email received**        | Check recipient user has **Email** set; check mail queue and server logs; ensure cron ran (Settings → Technical → Automation → Scheduled Actions).     |
-| **Scheduled report not run** | Cron "BTP Reports: Scheduled Report Generation" must be active; Daily = every day, Weekly = Monday, Monthly = 1st. Run the cron manually once to test. |
-| **Export History empty**     | Run a report from the template (Generate or Generate and Send by Email) at least once.                                                                 |
-
-
----
-
-## 9. Quick Reference — Key Fields
-
-
-| Model                   | Field              | Meaning                                                                                                                                                                  |
-| ----------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **btp.report.template** | name               | Report name.                                                                                                                                                             |
-| **btp.report.template** | scope              | commercial_leads_quotes / site_progress / client_volume / salesperson_activity / article_consumption / supplier_analysis / qhse_incidents / margin_consumption_combined. |
-| **btp.report.template** | date_from, date_to | Optional period filter.                                                                                                                                                  |
-| **btp.report.template** | company_id         | Optional company filter.                                                                                                                                                 |
-| **btp.report.template** | output_format      | pdf / xlsx / csv.                                                                                                                                                        |
-| **btp.report.template** | schedule           | none / daily / weekly / monthly.                                                                                                                                         |
-| **btp.report.template** | recipient_user_ids | Users who receive the report by email when run or scheduled.                                                                                                             |
-| **btp.export.job**      | report_template_id | Template used.                                                                                                                                                           |
-| **btp.export.job**      | run_date           | When the report was run.                                                                                                                                                 |
-| **btp.export.job**      | state              | pending / done / failed.                                                                                                                                                 |
-| **btp.export.job**      | attachment_id      | Generated file (PDF/Excel/CSV).                                                                                                                                          |
-| **btp.export.job**      | error_message      | Error text if state = failed.                                                                                                                                            |
-
+| Problem | Root cause to check | Corrective action |
+| --- | --- | --- |
+| Export job = Failed | Scope method raises error, missing model data | Open `error_message`; validate source data and filters |
+| Excel export fails | Missing `xlsxwriter` dependency | Install `xlsxwriter` or switch to CSV |
+| No email received | Recipient has no email / mail server issue | Check user email + outgoing SMTP + mail queue |
+| Scheduled run not triggering | Cron inactive or not due | Activate cron; run manually. Monthly runs on 1st or if no export in 31 days; weekly on Monday or no export in 8 days |
+| Export History empty after manual cron | Template was not “due” (e.g. monthly only on 1st) | Logic now treats “no recent export” as due: run cron again; new monthly templates run on first trigger |
+| Empty report | Filters too restrictive (date/company/geography) | Clear filters and rerun |
+| PDF not generated | QWeb report template issue | Verify generic report XML loaded, upgrade module |
 
 ---
 
-## 10. Summary Checklist
+## 10) Final Sign-off
 
-- Report templates are under **Reports & Exports → Report Templates**; create with scope, format, optional schedule and recipients.
-- **Generate (no email)** and **Generate and Send by Email** create an Export Job and (for the second) send the file to recipients.
-- **Export History** lists all runs; download from the job form when Status = Done.
-- Scheduled reports run via cron (daily / weekly / monthly); set Schedule and Email Recipients.
-- Use CSV if Excel is not available (no xlsxwriter); PDF uses the generic QWeb report.
+Use this sign-off table for client acceptance:
+
+| Scenario | Tester | Date | Result | Notes |
+| --- | --- | --- | --- | --- |
+| S1 Commercial weekly Excel email |  |  | Pass/Fail |  |
+| S2 Site PDF export |  |  | Pass/Fail |  |
+| S3 Supplier 12-month analysis |  |  | Pass/Fail |  |
+| S4 Combined CSV analysis |  |  | Pass/Fail |  |
+| S5 Monthly automation |  |  | Pass/Fail |  |
+
+Module 11 is accepted only when all scenarios pass and no failed export remains unresolved.
 

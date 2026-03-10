@@ -46,6 +46,7 @@
                         <group>
                             <field name="date_from"/>
                             <field name="date_to"/>
+                            <field name="geographic_area" placeholder="City / ZIP / Country"/>
                             <field name="company_id"/>
                         </group>
                     </group>
@@ -84,6 +85,7 @@
             <search string="Search Report Templates">
                 <field name="name"/>
                 <field name="scope"/>
+                <field name="geographic_area"/>
                 <filter string="Scheduled" name="scheduled" domain="[('schedule', '!=', 'none')]"/>
                 <filter string="PDF" name="pdf" domain="[('output_format', '=', 'pdf')]"/>
                 <filter string="Excel" name="xlsx" domain="[('output_format', '=', 'xlsx')]"/>

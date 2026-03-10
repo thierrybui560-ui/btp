@@ -3,6 +3,8 @@
 # Module 11 — Reports & Exports
 
 import logging
+from datetime import timedelta
+
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 
@@ -10,12 +12,19 @@ _logger = logging.getLogger(__name__)
 
 REPORT_SCOPE = [
     ('commercial_leads_quotes', 'Leads & Quotes by Salesperson'),
+    ('lot_cost_consumption', 'Costs & Consumption by Quote Lot'),
     ('site_progress', 'Site Progress, Costs & Margins'),
     ('client_volume', 'Business Volume by Client'),
     ('salesperson_activity', 'Salesperson Activity (leads, quotes, conversion)'),
+    ('employee_productivity', 'Employee Productivity (hours, pointing, sites)'),
+    ('team_performance', 'Team Performance (yield, assigned sites)'),
     ('article_consumption', 'Article Consumption (planned vs actual)'),
+    ('article_rotation', 'Article Rotation & Stock Movements'),
     ('supplier_analysis', 'Supplier / Price Analysis'),
     ('qhse_incidents', 'QHSE Incidents by Site'),
+    ('combined_geo_commercial', 'Commercial Performance by Geographic Area'),
+    ('combined_article_site_supplier', 'Article Consumption by Site & Supplier'),
+    ('combined_margin_salesperson_client', 'Net Margin by Salesperson & Client'),
     ('margin_consumption_combined', 'Net Margin & Article Consumption'),
     # Module 13 — Multi-companies consolidation
     ('consolidated_turnover', 'Consolidated Turnover by Company'),
@@ -55,6 +64,10 @@ class BtpReportTemplate(models.Model):
     )
     date_from = fields.Date(string='From Date', help='Optional period filter (leave empty for all).')
     date_to = fields.Date(string='To Date', help='Optional period filter (leave empty for all).')
+    geographic_area = fields.Char(
+        string='Geographic Area',
+        help='Optional city/zip/country filter for geo-oriented scopes.',
+    )
     company_id = fields.Many2one(
         'res.company',
         string='Company',
@@ -160,7 +173,10 @@ class BtpReportTemplate(models.Model):
 
     @api.model
     def _cron_run_scheduled_reports(self):
-        """Run templates that are due (daily / weekly / monthly)."""
+        """Run templates that are due (daily / weekly / monthly).
+        Weekly runs on Monday or if no export in the last 8 days (e.g. first run / manual trigger).
+        Monthly runs on the 1st or if no export in the last 31 days (e.g. first run / manual trigger).
+        """
         today = fields.Date.today()
         weekday = today.weekday()  # 0 = Monday
         day_of_month = today.day
@@ -173,10 +189,22 @@ class BtpReportTemplate(models.Model):
             due = False
             if t.schedule == 'daily':
                 due = True
-            elif t.schedule == 'weekly' and weekday == 0:
-                due = True
-            elif t.schedule == 'monthly' and day_of_month == 1:
-                due = True
+            elif t.schedule == 'weekly':
+                # Due on Monday or if no export in last 8 days (first run or manual cron test)
+                cutoff_weekly = today - timedelta(days=8)
+                has_recent = self.env['btp.export.job'].search_count([
+                    ('report_template_id', '=', t.id),
+                    ('run_date', '>=', cutoff_weekly),
+                ]) > 0
+                due = (weekday == 0) or not has_recent
+            elif t.schedule == 'monthly':
+                # Due on 1st or if no export in last 31 days (first run or manual cron test)
+                cutoff_monthly = today - timedelta(days=31)
+                has_recent = self.env['btp.export.job'].search_count([
+                    ('report_template_id', '=', t.id),
+                    ('run_date', '>=', cutoff_monthly),
+                ]) > 0
+                due = (day_of_month == 1) or not has_recent
             if not due:
                 continue
             try:
@@ -251,6 +279,12 @@ class BtpReportTemplate(models.Model):
             domain.append(('date_order', '<=', self.date_to))
         if self.company_id:
             domain.append(('company_id', '=', self.company_id.id))
+        if self.geographic_area:
+            ga = self.geographic_area.strip()
+            domain += ['|', '|',
+                       ('partner_shipping_id.city', 'ilike', ga),
+                       ('partner_shipping_id.zip', 'ilike', ga),
+                       ('partner_shipping_id.country_id.name', 'ilike', ga)]
         orders = self.env['sale.order'].search(domain, order='user_id, date_order')
         # Aggregate by user
         by_user = {}
@@ -295,13 +329,20 @@ class BtpReportTemplate(models.Model):
         domain = [('btp_site_code', '!=', False)]
         if self.company_id:
             domain.append(('company_id', '=', self.company_id.id))
+        if self.geographic_area:
+            ga = self.geographic_area.strip()
+            domain += ['|', '|',
+                       ('btp_site_city', 'ilike', ga),
+                       ('btp_site_zip', 'ilike', ga),
+                       ('btp_site_country_id.name', 'ilike', ga)]
         sites = self.env['project.project'].search(domain, order='btp_site_code')
         headers = [
             _('Site Code'), _('Site Name'), _('Quote Total'), _('Invoiced'), _('Actual Costs'),
-            _('Net Margin'), _('Margin %'),
+            _('Net Margin'), _('Margin %'), _('QHSE Incidents'),
         ]
         rows = []
         for s in sites:
+            incidents = self.env['btp.qse.incident'].search_count([('site_id', '=', s.id)])
             rows.append([
                 s.btp_site_code or '',
                 s.name or '',
@@ -310,6 +351,7 @@ class BtpReportTemplate(models.Model):
                 '%.2f' % (s.btp_actual_costs or 0),
                 '%.2f' % (s.btp_net_margin or 0),
                 '%.1f' % (s.btp_margin_percent or 0),
+                incidents,
             ])
         if not rows:
             rows = [[_('No sites.')]]
@@ -324,17 +366,29 @@ class BtpReportTemplate(models.Model):
             domain.append(('date_order', '<=', self.date_to))
         if self.company_id:
             domain.append(('company_id', '=', self.company_id.id))
+        if self.geographic_area:
+            ga = self.geographic_area.strip()
+            domain += ['|', '|',
+                       ('partner_id.city', 'ilike', ga),
+                       ('partner_id.zip', 'ilike', ga),
+                       ('partner_id.country_id.name', 'ilike', ga)]
         orders = self.env['sale.order'].search(domain, order='partner_id')
         by_partner = {}
         for o in orders:
             p = o.partner_id
             key = (p.id, p.name if p else _('No client'))
             if key not in by_partner:
-                by_partner[key] = {'name': key[1], 'orders': 0, 'total': 0.0}
-            by_partner[key]['orders'] += 1
+                by_partner[key] = {'name': key[1], 'quotes': 0, 'orders': 0, 'total': 0.0}
+            if o.btp_quote_number:
+                by_partner[key]['quotes'] += 1
+            if o.state in ('sale', 'done'):
+                by_partner[key]['orders'] += 1
             by_partner[key]['total'] += o.amount_total or 0
-        headers = [_('Client'), _('Orders'), _('Total amount')]
-        rows = [[v['name'], v['orders'], '%.2f' % v['total']] for _, v in sorted(by_partner.items(), key=lambda x: x[1]['name'])]
+        headers = [_('Client'), _('Quotes'), _('Orders'), _('Conversion %'), _('Total amount')]
+        rows = []
+        for _key, v in sorted(by_partner.items(), key=lambda x: x[1]['name']):
+            conv = (v['orders'] / v['quotes'] * 100.0) if v['quotes'] else 0.0
+            rows.append([v['name'], v['quotes'], v['orders'], '%.1f' % conv, '%.2f' % v['total']])
         if not rows:
             rows = [[_('No data.')]]
         return {'title': _('Business Volume by Client'), 'headers': headers, 'rows': rows}
@@ -377,7 +431,7 @@ class BtpReportTemplate(models.Model):
             by_user[key]['quotes_won'] = by_user[key].get('quotes_won', 0) + 1
         headers = [_('Salesperson'), _('Leads'), _('Converted'), _('Quotes won'), _('Conversion %')]
         rows = []
-        for (_, name), v in sorted(by_user.items(), key=lambda x: x[0][1] or ''):
+        for (_uid, name), v in sorted(by_user.items(), key=lambda x: x[0][1] or ''):
             quotes_won = v.get('quotes_won', 0)
             conv = (v['converted'] / v['leads'] * 100) if v['leads'] else 0
             rows.append([name, v['leads'], v['converted'], quotes_won, '%.1f' % conv])
@@ -415,19 +469,270 @@ class BtpReportTemplate(models.Model):
         if self.date_to:
             domain.append(('purchase_date', '<=', self.date_to))
         history = self.env['btp.article.price.history'].search(domain, order='supplier_id, article_id')
-        headers = [_('Supplier'), _('Article'), _('Date'), _('Price'), _('Quantity')]
-        rows = []
+        headers = [_('Supplier'), _('Article'), _('Lines'), _('Average price'), _('Purchased qty'), _('Conformity')]
+        grouped = {}
         for h in history:
+            key = (h.supplier_id.id if h.supplier_id else 0, h.article_id.id if h.article_id else 0)
+            if key not in grouped:
+                grouped[key] = {
+                    'supplier': h.supplier_id.name if h.supplier_id else '',
+                    'article': h.article_id.name if h.article_id else '',
+                    'lines': 0,
+                    'qty': 0.0,
+                    'amount': 0.0,
+                    'conformity': h.supplier_id.btp_conformity_status if h.supplier_id else '',
+                }
+            grouped[key]['lines'] += 1
+            grouped[key]['qty'] += (h.quantity or 0.0)
+            grouped[key]['amount'] += (h.purchase_price or 0.0) * (h.quantity or 0.0)
+        rows = []
+        for _key, g in sorted(grouped.items(), key=lambda x: (x[1]['supplier'], x[1]['article'])):
+            avg = (g['amount'] / g['qty']) if g['qty'] else 0.0
             rows.append([
-                h.supplier_id.name if h.supplier_id else '',
-                h.article_id.name if h.article_id else '',
-                h.purchase_date.strftime('%Y-%m-%d') if h.purchase_date else '',
-                '%.2f' % (h.purchase_price or 0),
-                '%.2f' % (h.quantity or 0),
+                g['supplier'],
+                g['article'],
+                g['lines'],
+                '%.2f' % avg,
+                '%.2f' % g['qty'],
+                g['conformity'] or '',
             ])
         if not rows:
             rows = [[_('No price history.')]]
         return {'title': _('Supplier / Price Analysis'), 'headers': headers, 'rows': rows}
+
+    def _get_data_lot_cost_consumption(self):
+        """Costs and consumptions by quote lot."""
+        domain = []
+        if self.date_from:
+            domain.append(('quote_id.date_order', '>=', self.date_from))
+        if self.date_to:
+            domain.append(('quote_id.date_order', '<=', self.date_to))
+        if self.company_id:
+            domain.append(('quote_id.company_id', '=', self.company_id.id))
+        lots = self.env['btp.quote.lot'].search(domain, order='quote_id, sequence')
+        headers = [_('Quote'), _('Lot'), _('Items'), _('Subtotal'), _('Total Cost'), _('Margin'), _('Margin %')]
+        rows = []
+        Item = self.env['btp.quote.item']
+        for lot in lots:
+            items = Item.search([('lot_id', '=', lot.id)])
+            subtotal = sum(items.mapped('subtotal'))
+            total_cost = sum(items.mapped('total_cost'))
+            margin = subtotal - total_cost
+            margin_pct = (margin / subtotal * 100.0) if subtotal else 0.0
+            rows.append([
+                lot.quote_id.name or '',
+                lot.name or '',
+                len(items),
+                '%.2f' % subtotal,
+                '%.2f' % total_cost,
+                '%.2f' % margin,
+                '%.1f' % margin_pct,
+            ])
+        if not rows:
+            rows = [[_('No quote lots.')]]
+        return {'title': _('Costs & Consumption by Quote Lot'), 'headers': headers, 'rows': rows}
+
+    def _get_data_employee_productivity(self):
+        """Employee productivity from pointing entries."""
+        domain = [('user_id', '!=', False)]
+        if self.date_from:
+            domain.append(('date', '>=', self.date_from))
+        if self.date_to:
+            domain.append(('date', '<=', self.date_to))
+        if self.company_id:
+            domain.append(('site_id.company_id', '=', self.company_id.id))
+        pointings = self.env['btp.site.pointing'].search(domain, order='user_id, date')
+        by_user = {}
+        for p in pointings:
+            key = p.user_id.id
+            if key not in by_user:
+                by_user[key] = {
+                    'employee': p.user_id.name,
+                    'hours': 0.0,
+                    'qty': 0.0,
+                    'sites': set(),
+                    'entries': 0,
+                }
+            by_user[key]['hours'] += (p.hours or 0.0)
+            by_user[key]['qty'] += (p.qty_done or 0.0)
+            by_user[key]['entries'] += 1
+            if p.site_id:
+                by_user[key]['sites'].add(p.site_id.id)
+        headers = [_('Employee'), _('Pointing entries'), _('Hours'), _('Qty done'), _('Sites followed')]
+        rows = []
+        for _key, v in sorted(by_user.items(), key=lambda x: x[1]['employee']):
+            rows.append([
+                v['employee'],
+                v['entries'],
+                '%.2f' % v['hours'],
+                '%.2f' % v['qty'],
+                len(v['sites']),
+            ])
+        if not rows:
+            rows = [[_('No pointing entries.')]]
+        return {'title': _('Employee Productivity'), 'headers': headers, 'rows': rows}
+
+    def _get_data_team_performance(self):
+        """Team performance: average yields and assigned sites."""
+        lead_domain = []
+        if self.date_from:
+            lead_domain.append(('create_date', '>=', self.date_from))
+        if self.date_to:
+            lead_domain.append(('create_date', '<=', self.date_to))
+        if self.company_id:
+            lead_domain.append(('company_id', '=', self.company_id.id))
+        leads = self.env['btp.lead'].search(lead_domain)
+        perf_domain = []
+        if self.date_from:
+            perf_domain.append(('date', '>=', self.date_from))
+        if self.date_to:
+            perf_domain.append(('date', '<=', self.date_to))
+        if self.company_id:
+            perf_domain.append(('project_id.company_id', '=', self.company_id.id))
+        perfs = self.env['btp.site.performance'].search(perf_domain)
+        by_team = {}
+        for l in leads:
+            team = l.user_id.sale_team_id
+            if not team:
+                continue
+            tid = team.id
+            if tid not in by_team:
+                by_team[tid] = {'team': team.name, 'leads': 0, 'sites': set(), 'yield_sum': 0.0, 'yield_n': 0}
+            by_team[tid]['leads'] += 1
+        for p in perfs:
+            team = p.project_id.user_id.sale_team_id
+            if not team:
+                continue
+            tid = team.id
+            if tid not in by_team:
+                by_team[tid] = {'team': team.name, 'leads': 0, 'sites': set(), 'yield_sum': 0.0, 'yield_n': 0}
+            by_team[tid]['yield_sum'] += (p.performance_rate or 0.0)
+            by_team[tid]['yield_n'] += 1
+            if p.project_id:
+                by_team[tid]['sites'].add(p.project_id.id)
+        headers = [_('Team'), _('Processed leads'), _('Assigned sites'), _('Average yield %')]
+        rows = []
+        for _key, v in sorted(by_team.items(), key=lambda x: x[1]['team']):
+            avg_yield = (v['yield_sum'] / v['yield_n']) if v['yield_n'] else 0.0
+            rows.append([v['team'], v['leads'], len(v['sites']), '%.1f' % avg_yield])
+        if not rows:
+            rows = [[_('No team data.')]]
+        return {'title': _('Team Performance'), 'headers': headers, 'rows': rows}
+
+    def _get_data_article_rotation(self):
+        """Article stock rotations and movement totals."""
+        domain = [('state', '=', 'done'), ('product_id', '!=', False)]
+        if self.date_from:
+            domain.append(('date', '>=', self.date_from))
+        if self.date_to:
+            domain.append(('date', '<=', self.date_to))
+        if self.company_id:
+            domain.append(('company_id', '=', self.company_id.id))
+        moves = self.env['stock.move'].search(domain, order='product_id')
+        grouped = {}
+        for m in moves:
+            key = m.product_id.id
+            if key not in grouped:
+                grouped[key] = {
+                    'article': m.product_id.display_name,
+                    'moves': 0,
+                    'qty': 0.0,
+                    'sites': set(),
+                }
+            grouped[key]['moves'] += 1
+            grouped[key]['qty'] += (m.quantity or 0.0)
+            if m.btp_site_id:
+                grouped[key]['sites'].add(m.btp_site_id.id)
+        headers = [_('Article'), _('Stock moves'), _('Moved quantity'), _('Sites touched')]
+        rows = []
+        for _key, g in sorted(grouped.items(), key=lambda x: x[1]['article']):
+            rows.append([g['article'], g['moves'], '%.2f' % g['qty'], len(g['sites'])])
+        if not rows:
+            rows = [[_('No stock moves.')]]
+        return {'title': _('Article Rotation & Stock Movements'), 'headers': headers, 'rows': rows}
+
+    def _get_data_combined_geo_commercial(self):
+        """Commercial performance by geographic area (city/zip/country)."""
+        domain = []
+        if self.date_from:
+            domain.append(('date_order', '>=', self.date_from))
+        if self.date_to:
+            domain.append(('date_order', '<=', self.date_to))
+        if self.company_id:
+            domain.append(('company_id', '=', self.company_id.id))
+        if self.geographic_area:
+            ga = self.geographic_area.strip()
+            domain += ['|', '|',
+                       ('partner_shipping_id.city', 'ilike', ga),
+                       ('partner_shipping_id.zip', 'ilike', ga),
+                       ('partner_shipping_id.country_id.name', 'ilike', ga)]
+        orders = self.env['sale.order'].search(domain)
+        grouped = {}
+        for o in orders:
+            area = o.partner_shipping_id.city or o.partner_shipping_id.zip or (
+                o.partner_shipping_id.country_id.name if o.partner_shipping_id.country_id else _('Unknown')
+            )
+            if area not in grouped:
+                grouped[area] = {'quotes': 0, 'won': 0, 'total': 0.0}
+            grouped[area]['quotes'] += 1
+            if o.state in ('sale', 'done'):
+                grouped[area]['won'] += 1
+            grouped[area]['total'] += (o.amount_total or 0.0)
+        headers = [_('Geographic area'), _('Quotes'), _('Won orders'), _('Conversion %'), _('Revenue')]
+        rows = []
+        for area, g in sorted(grouped.items(), key=lambda x: x[0] or ''):
+            conv = (g['won'] / g['quotes'] * 100.0) if g['quotes'] else 0.0
+            rows.append([area, g['quotes'], g['won'], '%.1f' % conv, '%.2f' % g['total']])
+        if not rows:
+            rows = [[_('No commercial data for selected area/period.')]]
+        return {'title': _('Commercial Performance by Geographic Area'), 'headers': headers, 'rows': rows}
+
+    def _get_data_combined_article_site_supplier(self):
+        """Article consumption by site and supplier."""
+        domain = []
+        if self.company_id:
+            domain.append(('site_id.company_id', '=', self.company_id.id))
+        consumptions = self.env['btp.site.consumption'].search(domain)
+        headers = [_('Site'), _('Article'), _('Supplier'), _('Planned'), _('Actual'), _('Variance')]
+        rows = []
+        for c in consumptions:
+            supplier_names = ', '.join(c.product_id.seller_ids.mapped('partner_id.name')) if c.product_id else ''
+            variance = (c.real_qty or 0.0) - (c.planned_qty or 0.0)
+            rows.append([
+                c.site_id.name or '',
+                c.product_id.name if c.product_id else '',
+                supplier_names,
+                '%.2f' % (c.planned_qty or 0.0),
+                '%.2f' % (c.real_qty or 0.0),
+                '%.2f' % variance,
+            ])
+        if not rows:
+            rows = [[_('No consumption data.')]]
+        return {'title': _('Article Consumption by Site & Supplier'), 'headers': headers, 'rows': rows}
+
+    def _get_data_combined_margin_salesperson_client(self):
+        """Net margin by salesperson and client (site-level)."""
+        domain = [('btp_site_code', '!=', False)]
+        if self.company_id:
+            domain.append(('company_id', '=', self.company_id.id))
+        sites = self.env['project.project'].search(domain)
+        grouped = {}
+        for s in sites:
+            salesperson = s.user_id.name if s.user_id else _('No salesperson')
+            client = s.partner_id.name if s.partner_id else _('No client')
+            key = (salesperson, client)
+            if key not in grouped:
+                grouped[key] = {'sites': 0, 'margin': 0.0, 'invoiced': 0.0}
+            grouped[key]['sites'] += 1
+            grouped[key]['margin'] += (s.btp_net_margin or 0.0)
+            grouped[key]['invoiced'] += (s.btp_invoiced_total or 0.0)
+        headers = [_('Salesperson'), _('Client'), _('Sites'), _('Invoiced'), _('Net Margin')]
+        rows = []
+        for (salesperson, client), g in sorted(grouped.items(), key=lambda x: (x[0][0], x[0][1])):
+            rows.append([salesperson, client, g['sites'], '%.2f' % g['invoiced'], '%.2f' % g['margin']])
+        if not rows:
+            rows = [[_('No margin data.')]]
+        return {'title': _('Net Margin by Salesperson & Client'), 'headers': headers, 'rows': rows}
 
     def _get_data_qhse_incidents(self):
         """QHSE incidents by site."""
@@ -501,7 +806,7 @@ class BtpReportTemplate(models.Model):
                 by_company[cid] = {'name': cname, 'total': 0.0}
             by_company[cid]['total'] += o.amount_total or 0
         headers = [_('Company'), _('Turnover (HT)')]
-        rows = [[v['name'], '%.2f' % v['total']] for _, v in sorted(by_company.items(), key=lambda x: x[1]['name'])]
+        rows = [[v['name'], '%.2f' % v['total']] for _k, v in sorted(by_company.items(), key=lambda x: x[1]['name'])]
         total = sum(v['total'] for v in by_company.values())
         if rows:
             rows.append([_('Total (consolidated)'), '%.2f' % total])
@@ -530,7 +835,7 @@ class BtpReportTemplate(models.Model):
                 by_company[cid] = {'name': cname, 'total': 0.0}
             by_company[cid]['total'] += m.amount_total or 0
         headers = [_('Company'), _('Invoiced Total (HT)')]
-        rows = [[v['name'], '%.2f' % v['total']] for _, v in sorted(by_company.items(), key=lambda x: x[1]['name'])]
+        rows = [[v['name'], '%.2f' % v['total']] for _k, v in sorted(by_company.items(), key=lambda x: x[1]['name'])]
         total = sum(v['total'] for v in by_company.values())
         if rows:
             rows.append([_('Total (consolidated)'), '%.2f' % total])
