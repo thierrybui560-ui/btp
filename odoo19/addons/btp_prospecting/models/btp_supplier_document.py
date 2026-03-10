@@ -125,7 +125,10 @@ class BtpSupplierDocument(models.Model):
         # Create activities for expiring documents
         activity_type = self.env.ref('mail.mail_activity_data_todo', raise_if_not_found=False)
         if activity_type:
+            res_model_id_partner = self.env['ir.model']._get('res.partner').id
             for doc in expiring_docs:
+                if not doc.supplier_id or not doc.supplier_id.id:
+                    continue
                 # Check if activity already exists
                 existing = self.env['mail.activity'].search([
                     ('res_model', '=', 'res.partner'),
@@ -136,7 +139,7 @@ class BtpSupplierDocument(models.Model):
                 
                 if not existing:
                     self.env['mail.activity'].create({
-                        'res_model': 'res.partner',
+                        'res_model_id': res_model_id_partner,
                         'res_id': doc.supplier_id.id,
                         'activity_type_id': activity_type.id,
                         'summary': _('Document "%s" expires on %s') % (doc.name, doc.expiration_date),
@@ -147,6 +150,8 @@ class BtpSupplierDocument(models.Model):
             
             # Create activities for expired documents
             for doc in expired_docs:
+                if not doc.supplier_id or not doc.supplier_id.id:
+                    continue
                 existing = self.env['mail.activity'].search([
                     ('res_model', '=', 'res.partner'),
                     ('res_id', '=', doc.supplier_id.id),
@@ -156,7 +161,7 @@ class BtpSupplierDocument(models.Model):
                 
                 if not existing:
                     self.env['mail.activity'].create({
-                        'res_model': 'res.partner',
+                        'res_model_id': res_model_id_partner,
                         'res_id': doc.supplier_id.id,
                         'activity_type_id': activity_type.id,
                         'summary': _('Document "%s" EXPIRED on %s') % (doc.name, doc.expiration_date),

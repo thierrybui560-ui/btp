@@ -29,6 +29,13 @@ class BtpQseCorrectiveAction(models.Model):
         store=True,
         readonly=True,
     )
+    company_id = fields.Many2one(
+        'res.company',
+        string='Company',
+        related='incident_id.company_id',
+        store=True,
+        readonly=True,
+    )
     name = fields.Char(
         string='Action',
         required=True,

@@ -270,7 +270,9 @@ class BtpMobileApiController(http.Controller):
                 'site_id': site.id,
                 'description': description,
                 'incident_type': incident_type,
+                'severity': kwargs.get('severity') or 'medium',
                 'location': location,
+                'concerned_team': kwargs.get('concerned_team'),
                 'user_id': request.env.user.id,
             }
             incident = request.env['btp.qse.incident'].create(vals)

@@ -3,6 +3,7 @@
 # Module 10 — Quality & Safety (QHSE)
 
 from odoo import models, fields, api, _
+from odoo.exceptions import UserError
 
 INCIDENT_TYPE = [
     ('incident', 'Incident'),
@@ -15,6 +16,13 @@ INCIDENT_STATE = [
     ('new', 'New'),
     ('in_progress', 'In Progress'),
     ('closed', 'Closed'),
+]
+
+INCIDENT_SEVERITY = [
+    ('low', 'Low'),
+    ('medium', 'Medium'),
+    ('high', 'High'),
+    ('critical', 'Critical'),
 ]
 
 
@@ -65,6 +73,13 @@ class BtpQseIncident(models.Model):
         default='incident',
         tracking=True,
     )
+    severity = fields.Selection(
+        INCIDENT_SEVERITY,
+        string='Severity',
+        required=True,
+        default='medium',
+        tracking=True,
+    )
     location = fields.Char(
         string='Location on Site',
         help='Optional precise location where the incident occurred.',
@@ -97,25 +112,12 @@ class BtpQseIncident(models.Model):
     )
     attachment_ids = fields.Many2many(
         'ir.attachment',
+        'btp_qse_incident_attachment_rel',
+        'incident_id',
+        'attachment_id',
         string='Photos / Attachments',
-        compute='_compute_attachment_ids',
-        help='Photos or documents attached to the declaration. Use the Chatter below to add files (drag and drop supported).',
+        help='Attach photos/documents directly in this section (drag and drop or browse).',
     )
-
-    @api.depends('message_ids')
-    def _compute_attachment_ids(self):
-        for record in self:
-            # Direct attachments on the record (res_model/res_id)
-            direct = self.env['ir.attachment'].search([
-                ('res_model', '=', record._name),
-                ('res_id', '=', record.id),
-            ])
-            # Attachments on chatter messages (drag-and-drop in Chatter)
-            from_messages = self.env['ir.attachment'].search([
-                ('res_model', '=', 'mail.message'),
-                ('res_id', 'in', record.message_ids.ids),
-            ])
-            record.attachment_ids = direct | from_messages
     corrective_action_ids = fields.One2many(
         'btp.qse.corrective.action',
         'incident_id',
@@ -145,7 +147,25 @@ class BtpQseIncident(models.Model):
             if vals.get('name', _('New')) == _('New'):
                 seq = self.env['ir.sequence'].next_by_code('btp.qse.incident') or _('New')
                 vals['name'] = seq
-        return super().create(vals_list)
+        records = super().create(vals_list)
+        records._sync_attachment_links()
+        return records
+
+    def write(self, vals):
+        res = super().write(vals)
+        if 'attachment_ids' in vals:
+            self._sync_attachment_links()
+        return res
+
+    def _sync_attachment_links(self):
+        """Bind uploaded attachments to this incident for coherent access/history."""
+        for rec in self:
+            to_link = rec.attachment_ids.filtered(
+                lambda a: (not a.res_model or a.res_model == rec._name)
+                and (not a.res_id or a.res_id == rec.id)
+            )
+            if to_link:
+                to_link.sudo().write({'res_model': rec._name, 'res_id': rec.id})
 
     def action_assign_me(self):
         self.ensure_one()
@@ -155,6 +175,17 @@ class BtpQseIncident(models.Model):
     def action_close(self):
         for record in self:
             if record.state != 'closed':
+                if not record.responsible_id:
+                    raise UserError(_('Set a QHSE Responsible before closing the incident.'))
+                if (
+                    record.responsible_id != self.env.user
+                    and not self.env.user.has_group('btp_prospecting.group_btp_manager')
+                    and not self.env.user.has_group('btp_prospecting.group_btp_admin')
+                ):
+                    raise UserError(_('Only the QHSE Responsible or a Manager can close this incident.'))
+                open_actions = record.corrective_action_ids.filtered(lambda a: a.state != 'done')
+                if open_actions:
+                    raise UserError(_('All corrective actions must be marked Done before closing the incident.'))
                 record.write({
                     'state': 'closed',
                     'closed_date': fields.Date.today(),

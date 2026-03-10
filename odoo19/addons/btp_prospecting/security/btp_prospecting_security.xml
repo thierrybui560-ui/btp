@@ -394,6 +394,28 @@
             <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
         </record>
+
+        <!-- Module 10 — QHSE / Site documents company scoping -->
+        <record id="btp_qse_incident_rule_company" model="ir.rule">
+            <field name="name">BTP QHSE Incident: Multi-Company</field>
+            <field name="model_id" ref="model_btp_qse_incident"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="btp_qse_corrective_action_rule_company" model="ir.rule">
+            <field name="name">BTP QHSE Corrective Action: Multi-Company</field>
+            <field name="model_id" ref="model_btp_qse_corrective_action"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="btp_site_document_rule_company" model="ir.rule">
+            <field name="name">BTP Site Document: Multi-Company</field>
+            <field name="model_id" ref="model_btp_site_document"/>
+            <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
     </data>
 </odoo>
 

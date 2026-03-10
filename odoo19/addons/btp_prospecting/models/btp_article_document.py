@@ -123,7 +123,10 @@ class BtpArticleDocument(models.Model):
         # Create activities for expiring documents
         activity_type = self.env.ref('mail.mail_activity_data_todo', raise_if_not_found=False)
         if activity_type:
+            res_model_id_product = self.env['ir.model']._get('product.template').id
             for doc in expiring_docs:
+                if not doc.article_id or not doc.article_id.id:
+                    continue
                 # Check if activity already exists
                 existing = self.env['mail.activity'].search([
                     ('res_model', '=', 'product.template'),
@@ -134,7 +137,7 @@ class BtpArticleDocument(models.Model):
                 
                 if not existing:
                     self.env['mail.activity'].create({
-                        'res_model': 'product.template',
+                        'res_model_id': res_model_id_product,
                         'res_id': doc.article_id.id,
                         'activity_type_id': activity_type.id,
                         'summary': _('Document "%s" expires on %s') % (doc.name, doc.expiration_date),
@@ -145,6 +148,8 @@ class BtpArticleDocument(models.Model):
             
             # Create activities for expired documents
             for doc in expired_docs:
+                if not doc.article_id or not doc.article_id.id:
+                    continue
                 existing = self.env['mail.activity'].search([
                     ('res_model', '=', 'product.template'),
                     ('res_id', '=', doc.article_id.id),
@@ -154,7 +159,7 @@ class BtpArticleDocument(models.Model):
                 
                 if not existing:
                     self.env['mail.activity'].create({
-                        'res_model': 'product.template',
+                        'res_model_id': res_model_id_product,
                         'res_id': doc.article_id.id,
                         'activity_type_id': activity_type.id,
                         'summary': _('Document "%s" EXPIRED on %s') % (doc.name, doc.expiration_date),

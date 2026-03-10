@@ -16,6 +16,7 @@
                 <field name="expires_soon" widget="boolean_toggle"/>
                 <field name="supplier_id"/>
                 <field name="subcontractor_id"/>
+                <field name="article_id"/>
                 <field name="quote_item_id"/>
                 <field name="active"/>
             </list>
@@ -49,6 +50,7 @@
                     <group string="Links">
                         <field name="supplier_id"/>
                         <field name="subcontractor_id"/>
+                        <field name="article_id"/>
                         <field name="quote_id"/>
                         <field name="quote_item_id"/>
                     </group>
@@ -69,6 +71,7 @@
                 <field name="category"/>
                 <field name="document_type"/>
                 <field name="name"/>
+                <field name="article_id"/>
                 <filter string="Contracts" name="category_contract" domain="[('category', '=', 'contract')]"/>
                 <filter string="Expired" name="expired" domain="[('is_expired', '=', True)]"/>
                 <filter string="Expiring Soon" name="expiring" domain="[('expires_soon', '=', True)]"/>

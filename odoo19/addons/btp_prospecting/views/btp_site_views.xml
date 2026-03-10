@@ -121,7 +121,7 @@
                             <field name="task_ids" nolabel="1" context="{'default_project_id': id}" mode="list" create="1" delete="1" edit="1"/>
                         </page>
                         <page string="Documents">
-                            <field name="btp_document_ids" nolabel="1" context="{'default_site_id': id}">
+                            <field name="btp_document_ids" nolabel="1" context="{'default_site_id': id, 'active_test': False}">
                                 <list>
                                     <field name="category"/>
                                     <field name="document_type"/>
@@ -133,6 +133,7 @@
                                     <field name="expires_soon" widget="boolean_toggle"/>
                                     <field name="supplier_id"/>
                                     <field name="subcontractor_id"/>
+                                    <field name="article_id"/>
                                 </list>
                             </field>
                         </page>
@@ -153,7 +154,7 @@
                         <page string="Contracts">
                             <field name="btp_document_ids" nolabel="1"
                                    domain="[('category', '=', 'contract')]"
-                                   context="{'default_site_id': id, 'default_category': 'contract'}">
+                                   context="{'default_site_id': id, 'default_category': 'contract', 'active_test': False}">
                                 <list>
                                     <field name="document_type"/>
                                     <field name="name"/>
@@ -166,10 +167,11 @@
                         <page string="Technical Documents">
                             <field name="btp_document_ids" nolabel="1"
                                    domain="[('category', '=', 'technical')]"
-                                   context="{'default_site_id': id, 'default_category': 'technical'}">
+                                   context="{'default_site_id': id, 'default_category': 'technical', 'active_test': False}">
                                 <list>
                                     <field name="document_type"/>
                                     <field name="name"/>
+                                    <field name="article_id"/>
                                     <field name="version_label"/>
                                     <field name="issue_date"/>
                                 </list>
@@ -178,7 +180,7 @@
                         <page string="Safety">
                             <field name="btp_document_ids" nolabel="1"
                                    domain="[('category', '=', 'regulatory')]"
-                                   context="{'default_site_id': id, 'default_category': 'regulatory'}">
+                                   context="{'default_site_id': id, 'default_category': 'regulatory', 'active_test': False}">
                                 <list>
                                     <field name="document_type"/>
                                     <field name="name"/>
@@ -197,6 +199,7 @@
                                     <field name="name"/>
                                     <field name="date"/>
                                     <field name="incident_type"/>
+                                    <field name="severity"/>
                                     <field name="state"/>
                                     <field name="responsible_id"/>
                                     <field name="corrective_action_count" string="Actions"/>
@@ -206,7 +209,7 @@
                         <page string="Supplier/Subcontractor">
                             <field name="btp_document_ids" nolabel="1"
                                    domain="[('category', '=', 'supplier')]"
-                                   context="{'default_site_id': id, 'default_category': 'supplier'}">
+                                   context="{'default_site_id': id, 'default_category': 'supplier', 'active_test': False}">
                                 <list>
                                     <field name="document_type"/>
                                     <field name="name"/>
@@ -220,7 +223,7 @@
                         <page string="Miscellaneous">
                             <field name="btp_document_ids" nolabel="1"
                                    domain="[('category', '=', 'misc')]"
-                                   context="{'default_site_id': id, 'default_category': 'misc'}">
+                                   context="{'default_site_id': id, 'default_category': 'misc', 'active_test': False}">
                                 <list>
                                     <field name="document_type"/>
                                     <field name="name"/>
@@ -230,6 +233,7 @@
                         </page>
                     </notebook>
                 </sheet>
+                <chatter reload_on_follower="True"/>
             </form>
         </field>
     </record>

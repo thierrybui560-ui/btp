@@ -48,3 +48,18 @@
   table-layout: auto;
 }
 
+// Module 10: dedicated drop zone for incident photo upload
+.btp_qse_dropzone {
+  border: 1px dashed #b6b6b6;
+  border-radius: 8px;
+  padding: 8px;
+  background: #fafafa;
+  transition: border-color 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+}
+
+.btp_qse_dropzone--active {
+  border-color: #875a7b;
+  background: #f7eef5;
+  box-shadow: 0 0 0 2px rgba(135, 90, 123, 0.12) inset;
+}
+

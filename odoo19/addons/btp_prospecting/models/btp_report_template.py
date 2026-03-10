@@ -441,14 +441,18 @@ class BtpReportTemplate(models.Model):
         incident_type_labels = dict(
             self.env['btp.qse.incident']._fields['incident_type'].selection
         )
+        severity_labels = dict(
+            self.env['btp.qse.incident']._fields['severity'].selection
+        )
         incidents = self.env['btp.qse.incident'].search(domain, order='site_id, date desc')
-        headers = [_('Site'), _('Date'), _('Type'), _('Status'), _('Description')]
+        headers = [_('Site'), _('Date'), _('Type'), _('Severity'), _('Status'), _('Description')]
         rows = []
         for i in incidents:
             rows.append([
                 i.site_id.name if i.site_id else '',
                 i.date.strftime('%Y-%m-%d') if i.date else '',
                 incident_type_labels.get(i.incident_type, i.incident_type) if i.incident_type else '',
+                severity_labels.get(i.severity, i.severity) if i.severity else '',
                 i.state or '',
                 (i.description or '')[:80],
             ])

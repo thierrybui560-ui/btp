@@ -13,6 +13,7 @@
                 <field name="site_id"/>
                 <field name="date"/>
                 <field name="incident_type"/>
+                <field name="severity"/>
                 <field name="state" widget="badge"/>
                 <field name="user_id"/>
                 <field name="responsible_id"/>
@@ -64,6 +65,7 @@
                             <field name="company_id" invisible="1"/>
                             <field name="date"/>
                             <field name="incident_type"/>
+                            <field name="severity"/>
                             <field name="state"/>
                             <field name="user_id" readonly="1"/>
                             <field name="responsible_id"/>
@@ -79,11 +81,12 @@
                     </group>
                     <group string="Photos / Attachments" colspan="2">
                         <div class="text-muted mb-2">
-                            To attach photos: open the <strong>Chatter</strong> panel on the right side of the screen
-                            (click the message/activity icon if the panel is collapsed), then drag and drop files
-                            into the attachment area, or type a message and attach files there.
+                            Drag and drop files directly in this area, or click to browse and upload.
+                            No need to use the chatter for photo upload.
                         </div>
-                        <field name="attachment_ids" nolabel="1" readonly="1" widget="many2many_binary"/>
+                        <div class="btp_qse_dropzone">
+                            <field name="attachment_ids" nolabel="1" widget="many2many_binary"/>
+                        </div>
                     </group>
                     <notebook>
                         <page string="Corrective Actions" name="corrective_actions">
@@ -123,16 +126,20 @@
                 <field name="description"/>
                 <field name="user_id"/>
                 <field name="responsible_id"/>
+                <field name="severity"/>
                 <filter string="New" name="state_new" domain="[('state', '=', 'new')]"/>
                 <filter string="In Progress" name="state_in_progress" domain="[('state', '=', 'in_progress')]"/>
                 <filter string="Closed" name="state_closed" domain="[('state', '=', 'closed')]"/>
                 <separator/>
                 <filter string="Accident" name="type_accident" domain="[('incident_type', '=', 'accident')]"/>
                 <filter string="Non-Conformity" name="type_non_conformity" domain="[('incident_type', '=', 'non_conformity')]"/>
+                <separator/>
+                <filter string="High/Critical" name="severity_high" domain="[('severity', 'in', ('high', 'critical'))]"/>
                 <group>
                     <filter string="Site" name="group_site" context="{'group_by': 'site_id'}"/>
                     <filter string="Type" name="group_type" context="{'group_by': 'incident_type'}"/>
                     <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Severity" name="group_severity" context="{'group_by': 'severity'}"/>
                 </group>
             </search>
         </field>

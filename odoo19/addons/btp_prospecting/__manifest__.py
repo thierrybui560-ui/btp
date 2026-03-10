@@ -168,6 +168,7 @@ Module 9 - Stocks &amp; Logistics:
     ],
     'assets': {
         'web.assets_backend': [
+            'btp_prospecting/static/src/js/qse_attachment_dropzone.js',
             'btp_prospecting/static/src/scss/btp_prospecting.scss',
         ],
     },
