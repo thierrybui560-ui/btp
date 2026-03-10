@@ -104,6 +104,17 @@ class BtpCallReport(models.Model):
         default=lambda self: self.env.company,
     )
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        reports = super().create(vals_list)
+        for report in reports:
+            # Keep calendar event and report linked both ways when report is created from a meeting.
+            if report.calendar_event_id and not report.calendar_event_id.btp_lead_id and report.btp_lead_id:
+                report.calendar_event_id.btp_lead_id = report.btp_lead_id.id
+            if report.calendar_event_id and not report.calendar_event_id.btp_site_id and report.btp_site_id:
+                report.calendar_event_id.btp_site_id = report.btp_site_id.id
+        return reports
+
     def action_create_tasks(self):
         """Create mail activities (tasks) from action lines and open the third party form."""
         self.ensure_one()
@@ -115,18 +126,22 @@ class BtpCallReport(models.Model):
                 continue
             if not line.deadline_date:
                 raise UserError(_('Each follow-up action must have a deadline. Please set a deadline for: %s') % (line.name or _('Action')))
-            activity_vals = {
-                'activity_type_id': todo_type.id if todo_type else self.env['mail.activity.type'].search([], limit=1).id,
-                'summary': line.name or _('Follow-up'),
-                'date_deadline': line.deadline_date,
-                'user_id': (line.assigned_to_id or self.env.user).id,
-                'res_model_id': self.env['ir.model']._get('res.partner').id,
-                'res_id': self.partner_id.id,
-            }
-            if line.note:
-                activity_vals['note'] = line.note
-            activity = self.env['mail.activity'].create(activity_vals)
-            line.mail_activity_id = activity.id
+            assignees = line.assigned_user_ids or line.assigned_to_id or self.env.user
+            created_activities = self.env['mail.activity']
+            for assignee in assignees:
+                activity_vals = {
+                    'activity_type_id': todo_type.id if todo_type else self.env['mail.activity.type'].search([], limit=1).id,
+                    'summary': line.name or _('Follow-up'),
+                    'date_deadline': line.deadline_date,
+                    'user_id': assignee.id,
+                    'res_model_id': self.env['ir.model']._get('res.partner').id,
+                    'res_id': self.partner_id.id,
+                }
+                if line.note:
+                    activity_vals['note'] = line.note
+                created_activities |= self.env['mail.activity'].create(activity_vals)
+            line.mail_activity_id = created_activities[:1].id
+            line.mail_activity_ids = [(6, 0, created_activities.ids)]
         return {
             'type': 'ir.actions.act_window',
             'res_model': 'res.partner',
@@ -161,10 +176,26 @@ class BtpCallReportAction(models.Model):
         string='Assigned To',
         default=lambda self: self.env.user,
     )
+    assigned_user_ids = fields.Many2many(
+        'res.users',
+        'btp_call_report_action_user_rel',
+        'action_id',
+        'user_id',
+        string='Assigned Collaborators',
+        help='When set, one task is created per collaborator.',
+    )
     deadline_date = fields.Date(string='Deadline')
     mail_activity_id = fields.Many2one(
         'mail.activity',
         string='Task',
         readonly=True,
         ondelete='set null',
+    )
+    mail_activity_ids = fields.Many2many(
+        'mail.activity',
+        'btp_call_report_action_activity_rel',
+        'action_id',
+        'activity_id',
+        string='Tasks',
+        readonly=True,
     )

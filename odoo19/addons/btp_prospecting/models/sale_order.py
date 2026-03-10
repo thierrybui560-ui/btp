@@ -378,6 +378,30 @@ class SaleOrder(models.Model):
 
         return action
 
+    def action_send_quote_reminder(self):
+        """Open mail composer with Module 12 quote reminder template."""
+        self.ensure_one()
+        action = self.action_quotation_send()
+        template = self.env.ref('btp_prospecting.email_template_btp_quote_reminder', raise_if_not_found=False)
+        if not template:
+            template = self.env['mail.template'].search([
+                ('name', '=', 'BTP Quote: Reminder'),
+                ('model_id.model', '=', 'sale.order'),
+            ], limit=1)
+        if not template:
+            raise UserError(_(
+                'Email template "BTP Quote: Reminder" was not found. '
+                'Please upgrade module "btp_prospecting" or create the template in Settings > Technical > Email > Templates.'
+            ))
+        ctx = dict(action.get('context', {}) or {})
+        ctx.update({
+            'default_use_template': True,
+            'default_template_id': template.id,
+            'default_composition_mode': 'comment',
+        })
+        action['context'] = ctx
+        return action
+
     def _btp_validate_subcontractor_documents(self):
         """Block quote send/confirm when subcontractor compliance docs are invalid."""
         subcontractors = self.env['res.partner']

@@ -170,6 +170,8 @@
             <xpath expr="//header/button[@name='action_quotation_send']" position="after">
                 <button name="action_send_quote" type="object" string="Send Quote" 
                         class="oe_highlight" modifiers="{'invisible': [['btp_quote_status', '!=', 'draft']]}"/>
+                <button name="action_send_quote_reminder" type="object" string="Send Reminder"
+                        modifiers="{'invisible': [['state', 'in', ['cancel']]]}"/>
                 <button name="action_create_revision" type="object" string="Create Revision" 
                         modifiers="{'invisible': [['btp_is_locked', '=', False]]}"/>
             </xpath>

@@ -11,6 +11,16 @@
                 <group string="BTP" name="btp_link">
                     <field name="btp_site_id" options="{'no_create': True}"/>
                     <field name="btp_lead_id" options="{'no_create': True}"/>
+                    <field name="btp_call_report_count" readonly="1"/>
+                    <button name="action_btp_create_report"
+                            type="object"
+                            string="Create Meeting Report"
+                            class="oe_highlight"
+                            invisible="not (btp_site_id or btp_lead_id)"/>
+                    <button name="action_btp_open_reports"
+                            type="object"
+                            string="Open Reports"
+                            invisible="btp_call_report_count == 0"/>
                 </group>
             </xpath>
         </field>

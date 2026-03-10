@@ -3,6 +3,8 @@
 # Module 12 — Third Parties & Integrated Messaging
 
 import logging
+from datetime import timedelta
+
 from odoo import models, fields, api, _
 
 _logger = logging.getLogger(__name__)
@@ -16,13 +18,31 @@ class MailActivity(models.Model):
         default=False,
         help='Set when this overdue activity has been escalated to N+1.',
     )
+    btp_reminder_d_sent = fields.Boolean(
+        string='D Reminder Sent',
+        default=False,
+        help='Reminder sent on deadline day.',
+    )
+    btp_reminder_d15_sent = fields.Boolean(
+        string='D+15 Reminder Sent',
+        default=False,
+        help='Reminder sent 15 days after deadline.',
+    )
+    btp_reminder_d30_sent = fields.Boolean(
+        string='D+30 Reminder Sent',
+        default=False,
+        help='Reminder sent 30 days after deadline.',
+    )
 
     @api.model
     def _cron_btp_escalate_overdue_activities(self):
-        """Escalate overdue activities to the assignee's manager (N+1)."""
+        """Escalate overdue activities to the assignee's manager (N+1) at D+30."""
+        # Keep a single scheduler entry practical: run reminder milestones before escalation.
+        self._cron_btp_send_activity_reminders()
         today = fields.Date.context_today(self)
+        escalation_threshold = today - timedelta(days=30)
         overdue = self.search([
-            ('date_deadline', '<', today),
+            ('date_deadline', '<=', escalation_threshold),
             ('btp_escalated', '=', False),
             ('user_id.manager_id', '!=', False),
         ])
@@ -47,3 +67,39 @@ class MailActivity(models.Model):
                 _logger.info('BTP: Escalated overdue activity %s to manager %s', activity.id, manager.name)
             except Exception as e:
                 _logger.exception('BTP escalation failed for activity %s: %s', activity.id, e)
+
+    @api.model
+    def _cron_btp_send_activity_reminders(self):
+        """Send reminder milestones for open activities: D, D+15, D+30."""
+        today = fields.Date.context_today(self)
+        activities = self.search([
+            ('date_deadline', '!=', False),
+            ('user_id', '!=', False),
+        ])
+        for activity in activities:
+            delay = (today - activity.date_deadline).days
+            if delay >= 30 and not activity.btp_reminder_d30_sent:
+                self._btp_send_reminder_notice(activity, 'D+30')
+                activity.btp_reminder_d30_sent = True
+            elif delay >= 15 and not activity.btp_reminder_d15_sent:
+                self._btp_send_reminder_notice(activity, 'D+15')
+                activity.btp_reminder_d15_sent = True
+            elif delay == 0 and not activity.btp_reminder_d_sent:
+                self._btp_send_reminder_notice(activity, 'D')
+                activity.btp_reminder_d_sent = True
+
+    @api.model
+    def _btp_send_reminder_notice(self, activity, stage):
+        """Notify assignee and keep a reminder trace in chatter."""
+        model = self.env[activity.res_model] if activity.res_model else False
+        target = model.browse(activity.res_id) if model and activity.res_id else False
+        summary = activity.summary or _('Task')
+        note = _('Reminder %s: "%s" deadline is %s.') % (stage, summary, activity.date_deadline)
+        if target and hasattr(target, 'message_post'):
+            target.message_post(body=note, message_type='comment')
+        if activity.user_id and activity.user_id.email:
+            self.env['mail.mail'].sudo().create({
+                'subject': _('BTP Reminder %s: %s') % (stage, summary),
+                'body_html': '<p>%s</p>' % note,
+                'email_to': activity.user_id.email,
+            }).send()

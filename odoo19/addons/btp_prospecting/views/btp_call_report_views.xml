@@ -59,9 +59,11 @@
                                 <list editable="bottom" create="1" delete="1">
                                     <field name="name" placeholder="Action description..."/>
                                     <field name="assigned_to_id" options="{'no_create': True}"/>
+                                    <field name="assigned_user_ids" widget="many2many_tags" optional="show"/>
                                     <field name="deadline_date"/>
                                     <field name="note" optional="show"/>
                                     <field name="mail_activity_id" column_invisible="1"/>
+                                    <field name="mail_activity_ids" column_invisible="1"/>
                                 </list>
                             </field>
                         </page>
