@@ -501,6 +501,7 @@ class ProjectProject(models.Model):
         move = self.env['account.move'].create({
             'move_type': 'out_invoice',
             'partner_id': self.partner_id.id,
+            'company_id': company.id,
             'invoice_date': fields.Date.today(),
             'ref': _('Final invoice - %s') % (self.name or self.btp_site_code or ''),
             'btp_invoice_type': 'final',

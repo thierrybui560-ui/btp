@@ -1,319 +1,285 @@
-# Module 13 — Multi-companies — User & Testing Guide
+# Module 13 — Multi-companies
 
-This guide helps you **use and test Module 13**: several group companies on the same Odoo with strict data separation, optional shared data (clients, articles, suppliers, commercial leads), and consolidated management views. It is based on the current BTP Prospecting implementation (Odoo 19).
+## 1) Objectives & Scope
 
----
+Module 13 enables several group companies to operate in one Odoo with:
 
-## 1. What Module 13 Does (Summary)
+- strict company-based visibility for operational data,
+- controlled sharing for strategic records (clients, suppliers, articles, leads),
+- company-specific business conditions where needed,
+- consolidated management reporting (turnover, cash, margin, shared clients).
 
-
-| Goal                        | What the system does                                                                                                                                                                                                                                                                |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Company choice at login** | User selects the company to work in; only companies to which they have rights appear. Standard Odoo company switcher allows switching without logging out.                                                                                                                          |
-| **Document per company**    | Each document (quote, invoice, site) is attached to a single company (`company_id`).                                                                                                                                                                                                |
-| **Exclusive data**          | Accounting, invoices, payments, sites, HR remain per company and are restricted by company rules.                                                                                                                                                                                   |
-| **Shared data**             | Clients can be shared (one legal file, commercial conditions per company via BTP Commercial Conditions). Suppliers and articles can be shared; articles use a common catalog with prices/suppliers per company. Leads can be shared (same lead, independent follow-up per company). |
-| **Consolidation**           | Management has consolidated reports: turnover by company, cash/invoiced by company, net margin by company and site, and shared clients distribution.                                                                                                                                |
-
+This document is both a user guide and UAT checklist.
 
 ---
 
-## 2. Feature List (What You Can Test)
+## 2) Requirement-to-Implementation Matrix
 
-
-| #   | Feature                                                                                 | Where to test                                                                                        | Section |
-| --- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------- |
-| F1  | **Company sharing settings** — SIREN, Use shared clients/suppliers/articles per company | BTP Prospecting → Multi-companies → Company Sharing Settings; or Settings → Companies → open company | 5.1     |
-| F2  | **Shared client** — Same legal file (partner), commercial conditions per company        | Clients & Contacts → Companies → edit partner → Shared Companies + Commercial Conditions per company | 5.2     |
-| F3  | **Shared lead** — Lead visible to several companies, each with its follow-up            | Leads → create/edit lead → Sharing type = Shared, Shared Companies = FR, BE                          | 5.3     |
-| F4  | **Quote/Site “Shared client” flag** — Indicates document relates to a shared client     | Quotes list (column “Shared client” optional); Site list (column “Shared client” optional)           | 5.4     |
-| F5  | **Consolidated turnover** — CA by company + total                                       | Multi-companies → Consolidation Reports → New → Scope = Consolidated Turnover by Company             | 5.5     |
-| F6  | **Consolidated cash / invoiced** — Invoiced amounts by company + total                  | Consolidation Reports → Scope = Consolidated Cash / Invoiced by Company                              | 5.6     |
-| F7  | **Consolidated margin** — Net margin by company and site + total                        | Consolidation Reports → Scope = Consolidated Net Margin by Company & Site                            | 5.7     |
-| F8  | **Shared clients distribution** — List of shared clients and which companies use them   | Consolidation Reports → Scope = Shared Clients Distribution                                          | 5.8     |
-
+| Requirement | Status | Implementation |
+| --- | --- | --- |
+| Company selection and switch | Implemented | Odoo multi-company selector + allowed company rights |
+| Each document attached to one company | Implemented | `company_id` on lead/order/invoice/site |
+| Shared vs exclusive data behavior | Implemented/Improved | shared clients/leads fields + stricter rules; company flags in `res.company` |
+| Shared client with per-company conditions | Implemented/Improved | `btp.company.commercial.condition` + uniqueness + validation |
+| Shared lead visibility across companies | Implemented | `sharing_type`, `shared_company_ids`, multi-company lead rule |
+| Consolidated multi-company reports | Implemented/Improved | turnover/cash/margin/shared-client scopes + HT corrections + period filter on margin |
+| Group vs single-entity filtering in reports | Implemented/Improved | report `company_id` filter + consolidation actions default to group scope |
 
 ---
 
-## 3. Where to Find Everything (UI Navigation)
+## 3) Menus, Models, and Key Fields
 
-### 3.1 BTP menu: Multi-companies
+### 3.1 Menus
 
+- `BTP Prospecting -> Multi-companies -> Company Sharing Settings`
+- `BTP Prospecting -> Multi-companies -> Consolidation Reports`
 
-| Menu path                                                        | What you see                                                                                                                                 | Access               |
-| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
-| **BTP Prospecting → Multi-companies → Company Sharing Settings** | List of companies (res.company). Open a company to set BTP SIREN and shared clients/suppliers/articles.                                      | BTP Manager / Admin. |
-| **BTP Prospecting → Multi-companies → Consolidation Reports**    | Report templates filtered to consolidation scopes (turnover, cash, margin, shared clients). Create template, set period/company, run report. | BTP Manager / Admin. |
+### 3.2 Main Models
 
+- `res.company` (extended): company sharing policy + SIREN
+- `res.partner` (extended): shared companies and company-specific commercial conditions
+- `btp.company.commercial.condition`: one condition per client/company
+- `btp.lead` (extended): multi-company sharing type and shared companies
+- `btp.report.template`: consolidation scopes
 
-### 3.2 Company and document visibility
+### 3.3 Key Fields
 
-
-| Where                | What                                                                                                                                                                                  |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Company switcher** | Top-right: switch current company without logging out. Only companies allowed for the user are shown.                                                                                 |
-| **Quotes / Sites**   | Each record has a company; list views can show optional column “Shared client” when the client is shared.                                                                             |
-| **Leads**            | Lead has Company and Sharing type (exclusive / shared / global). Shared leads list “Shared companies”. Record rules restrict visibility to the user’s companies and shared companies. |
-
-
-### 3.3 Reports & KPIs (Module 13)
-
-
-| Report scope                                  | Content                                                                                |
-| --------------------------------------------- | -------------------------------------------------------------------------------------- |
-| **Consolidated Turnover by Company**          | Turnover (HT) per company from converted sale orders; last row = Total (consolidated). |
-| **Consolidated Cash / Invoiced by Company**   | Invoiced total (HT) per company from posted customer invoices; last row = Total.       |
-| **Consolidated Net Margin by Company & Site** | Rows: company, site, net margin, margin %; subtotal per company; last row = Total.     |
-| **Shared Clients Distribution**               | Client name and list of companies with which the client is shared.                     |
-
-
-On each report template you can set **Company** to restrict to one entity, or leave empty for full group consolidation.
+- **Company policy**: `btp_siren`, `btp_shared_clients`, `btp_shared_suppliers`, `btp_shared_articles`
+- **Partner sharing**: `btp_shared_company_ids`
+- **Commercial condition**: `partner_id`, `company_id`, `pricelist_id`, `payment_term_id`, `incoterm_id`
+- **Lead sharing**: `sharing_type` (`exclusive` / `shared` / `global`), `shared_company_ids`
+- **Document flags**: `sale.order.btp_is_shared`, `project.project.btp_is_shared`
 
 ---
 
-## 4. Connection & Company Selection
+## 4) Access and Separation Rules
 
-- **At login**: The user chooses the company (or gets the default) among companies they are allowed to use (`allowed_company_ids`).
-- **Without logging out**: Use the company drop-down in the top bar to switch company.
-- **Documents**: Every quote, invoice, and site is attached to one company (`company_id`). The system limits visibility of companies and records according to assigned rights and record rules (e.g. leads: own company or shared companies).
+- users only see companies in their allowed companies.
+- documents remain attached to one company (`company_id`).
+- partner visibility is now company/share-aware for salesperson, non-sales, and manager roles.
+- commercial conditions are company-scoped and constrained by sharing logic.
 
----
-
-## 5. Step-by-Step Tests
-
-### 5.1 Company sharing settings (F1)
-
-**Steps**
-
-1. **BTP Prospecting → Multi-companies → Company Sharing Settings** (or **Settings → Companies** and open a company).
-2. Open a company (e.g. French entity).
-3. In **BTP Multi-company**: set **SIREN** (e.g. 123456789), check **Use Shared Clients**, **Use Shared Suppliers**, **Use Shared Articles** as needed.
-4. Save.
-
-**Expected**
-
-- Company form shows the BTP Multi-company group. Values are saved and used for policy (shared clients/suppliers/articles). Other modules (e.g. partner visibility, commercial conditions) rely on these flags and on partner/lead sharing fields.
-
-### 5.2 Shared client and commercial conditions (F2)
-
-**Steps**
-
-1. **Clients & Contacts → Companies** → create or open a client (company type).
-2. In **BTP** (or equivalent) set **Shared Companies** to e.g. FR and BE (companies that share this client).
-3. Open **Commercial Conditions** (or **BTP Company Commercial Conditions**): add one line per operating company (e.g. FR: pricelist X, payment term 30 days; BE: pricelist Y, payment term 45 days).
-4. Save.
-
-**Expected**
-
-- One legal file (partner) for the client; commercial conditions are specific per company. Both FR and BE users (with rights) can see and use this client according to record rules.
-
-### 5.3 Shared lead (F3)
-
-**Steps**
-
-1. **Leads →** create or edit a lead.
-2. Set **Company** to e.g. FR (main company).
-3. Set **Sharing type** to **Shared**.
-4. Set **Shared companies** to FR and BE.
-5. Save.
-
-**Expected**
-
-- Lead is visible to users whose current company is FR or BE (and who have lead access). Each company can have its own follow-up (assignee, stages, etc.) while the lead record is shared.
-
-### 5.4 Quote and site “Shared client” (F4)
-
-**Steps**
-
-1. Create a **Quote** with **Client** = a partner that has **Shared Companies** set (e.g. Bouygues Construction shared with FR and BE).
-2. Save; optionally show the “Shared client” column in the Quotes list.
-3. Convert to order so a **Site** is created; open the site.
-4. In the Sites list, optionally show the “Shared client” column.
-
-**Expected**
-
-- Quote and site show **Shared client** = true (computed from the client’s shared companies). Column is optional in list views.
-
-### 5.5 Consolidated turnover report (F5)
-
-**Steps**
-
-1. **BTP Prospecting → Multi-companies → Consolidation Reports** → **New**.
-2. **Report Name** = e.g. “Group CA”.
-3. **Scope** = **Consolidated Turnover by Company**.
-4. **From Date** / **To Date** = desired period (or leave empty for all).
-5. **Company** = leave empty for full group, or select one company to restrict.
-6. **Output Format** = PDF or Excel.
-7. Save, then **Generate (no email)** or **Generate and Send by Email**.
-
-**Expected**
-
-- Report lists one row per company with turnover (HT), then a row **Total (consolidated)**. File is generated and can be downloaded from Export History.
-
-### 5.6 Consolidated cash / invoiced report (F6)
-
-**Steps**
-
-1. In **Consolidation Reports**, create a new template.
-2. **Scope** = **Consolidated Cash / Invoiced by Company**.
-3. Set period and company filter as needed; run the report.
-
-**Expected**
-
-- Rows: company name, invoiced total (HT) from posted customer invoices; last row = Total (consolidated).
-
-### 5.7 Consolidated margin report (F7)
-
-**Steps**
-
-1. New template, **Scope** = **Consolidated Net Margin by Company & Site**.
-2. Optionally set **Company** to one entity.
-3. Run the report.
-
-**Expected**
-
-- Rows: Company, Site, Net Margin, Margin %; subtotal row per company; last row = Total (consolidated).
-
-### 5.8 Shared clients distribution (F8)
-
-**Steps**
-
-1. New template, **Scope** = **Shared Clients Distribution**.
-2. Run the report (no period filter; uses all shared clients).
-
-**Expected**
-
-- List of clients (companies) that have **Shared Companies** set, with the list of company names they are shared with.
+Important:
+- `BTP Commercial Condition` now enforces one row per `(client, company)`.
+- a commercial condition company must match the partner shared-company list when sharing is used.
 
 ---
 
-## 6. Acceptance Scenarios (Spec Module 13)
+## 5) Shared/Exclusive Data Rules
 
-### S1 — Restricted access: user only in company FR
+### 5.1 Exclusive Data
 
-1. Assign the user only to company **FR** (no BE in allowed companies).
-2. Log in and switch company: only FR appears.
-3. **Verify**: User does not see company BE; leads, partners, and documents of BE are not accessible (enforced by company and record rules).
+- accounting entries, invoices, payments, bank statements
+- sites/contracts and most operational records
+- user-level activities scoped by company permissions
 
-### S2 — Shared client: Bouygues Construction = shared FR and BE
+### 5.2 Shared Data
 
-1. Create or select client **Bouygues Construction**; set **Shared Companies** = FR and BE.
-2. Add **Commercial Conditions**: one line for FR (e.g. pricelist, payment term), one for BE (different conditions).
-3. **Verify**: One legal file (SIREN, address); commercial conditions are distinct per company. Users of FR and BE (with rights) see the client and use the correct conditions for their company.
-
-### S3 — Common article: “Fireproof mortar” shared, price FR 10€/kg, BE 12€/kg
-
-1. Use a **shared article** (product with `company_id` = False or shared) and set **pricelists** or **supplier info** per company (FR: 10€/kg, BE: 12€/kg) via Odoo pricelists / product form.
-2. **Verify**: Same article in catalog; selling/purchase prices or conditions can differ by company (Odoo standard + BTP commercial conditions / pricelists per company).
-
-### S4 — Multi-company lead: international site, separate FR and BE follow-up
-
-1. Create a lead; **Sharing type** = **Shared**, **Shared companies** = FR and BE.
-2. Assign or process the lead from company FR (e.g. assignee FR); switch to BE and ensure BE users can see the same lead and add their follow-up (e.g. different assignee or notes).
-3. **Verify**: Same lead record; both companies see it; follow-up can be independent (assignee, activities) per company usage.
-
-### S5 — Consolidation: management consults consolidated group CA, then detail by entity
-
-1. **Multi-companies → Consolidation Reports** → create template **Consolidated Turnover by Company**, **Company** = empty.
-2. Run the report.
-3. **Verify**: Report shows CA per company and **Total (consolidated)**. Then create the same scope with **Company** = FR only; run again and verify only FR row(s) and total for FR.
+- **Clients**: one legal file can be shared by multiple companies, with separate commercial conditions.
+- **Suppliers/Articles**: sharing policy controlled by company flags.
+- **Leads**: a lead can be shared with several companies through `sharing_type='shared'`.
 
 ---
 
-## 7. Troubleshooting
+## 6) Consolidation Reports (Module 13)
 
+Available scopes:
 
-| Problem                                         | What to check                                                                                                                                                                                   |
-| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **User does not see a company**                 | User’s **Allowed companies** (Settings → Users → Companies). User must have at least one company.                                                                                               |
-| **User sees leads/partners of another company** | Record rules: leads use company_id and shared_company_ids; partners use btp_assigned_salesperson_id and btp_shared_company_ids. Ensure rules are applied and multi-company is enabled.          |
-| **Shared client not visible in other company**  | Partner **Shared Companies** must include that company. User must have that company in allowed companies and have BTP partner/lead rights.                                                      |
-| **Consolidation report empty**                  | Check **From/To** dates and **Company** filter. For turnover: need converted sale orders (state sale/done). For cash: need posted customer invoices. For margin: need sites with btp_site_code. |
-| **BTP Multi-company group not on company form** | Module 13 views must be loaded; upgrade the module. Inherited view is `res.company.form.btp.multi.company`.                                                                                     |
-| **“Shared client” always false on quote/site**  | Quote: partner must have **Shared Companies** set. Site: computed from source quote’s partner; ensure quote has the shared client.                                                              |
+- `Consolidated Turnover by Company` (HT basis)
+- `Consolidated Cash / Invoiced by Company` (HT basis)
+- `Consolidated Net Margin by Company & Site`
+- `Shared Clients Distribution`
 
+Improvements applied:
 
----
-
-## 8. Quick Reference — Key Fields
-
-### res.company (extended for Module 13)
-
-
-| Field                | Meaning                                             |
-| -------------------- | --------------------------------------------------- |
-| btp_siren            | Optional 9-digit SIREN for this company.            |
-| btp_shared_clients   | Use shared clients (policy flag).                   |
-| btp_shared_suppliers | Use shared suppliers (policy flag).                 |
-| btp_shared_articles  | Use shared articles / common catalog (policy flag). |
-
-
-### res.partner (existing, used by Module 13)
-
-
-| Field                  | Meaning                                       |
-| ---------------------- | --------------------------------------------- |
-| btp_shared_company_ids | Companies that share this client (many2many). |
-
-
-### btp.lead (existing)
-
-
-| Field              | Meaning                                             |
-| ------------------ | --------------------------------------------------- |
-| company_id         | Main company of the lead.                           |
-| sharing_type       | exclusive / shared / global.                        |
-| shared_company_ids | Companies that can see/use this lead (when shared). |
-
-
-### btp.company.commercial.condition (existing)
-
-
-| Field                                      | Meaning                                         |
-| ------------------------------------------ | ----------------------------------------------- |
-| partner_id                                 | Client (company).                               |
-| company_id                                 | Operating company (conditions are per company). |
-| pricelist_id, payment_term_id, incoterm_id | Commercial conditions for this company.         |
-
-
-### sale.order (extended)
-
-
-| Field         | Meaning                                                        |
-| ------------- | -------------------------------------------------------------- |
-| company_id    | Company of the quote (Odoo standard).                          |
-| btp_is_shared | True when the client (partner) is shared with other companies. |
-
-
-### project.project / BTP Site (extended)
-
-
-| Field         | Meaning                                        |
-| ------------- | ---------------------------------------------- |
-| company_id    | Company of the site (Odoo standard).           |
-| btp_is_shared | True when the source quote’s client is shared. |
-
-
-### Report template scopes (Module 13)
-
-
-| Scope                       | Description                                                     |
-| --------------------------- | --------------------------------------------------------------- |
-| consolidated_turnover       | Turnover (HT) by company + total from sale orders (sale/done).  |
-| consolidated_cash           | Invoiced total (HT) by company + total from posted out_invoice. |
-| consolidated_margin         | Net margin by company and site + subtotals + total.             |
-| shared_clients_distribution | Client name and list of shared companies.                       |
-
+- turnover and cash consolidate on untaxed amounts (`HT` consistency),
+- consolidated margin supports period filtering using site reference dates,
+- consolidation action defaults to group context (`company_id` empty).
 
 ---
 
-## 9. Summary Checklist
+## 7) Step-by-Step UAT Scenarios
 
-- **Company selection**: Users choose company at login and can switch via the company drop-down; only allowed companies are visible.
-- **Documents** (quotes, invoices, sites) are attached to one company; optional **Shared client** flag on quote/site when the client is shared.
-- **Shared clients**: One legal file (partner), **Shared Companies** + **Commercial Conditions** per company (btp.company.commercial.condition).
-- **Shared leads**: **Sharing type** = Shared, **Shared companies** = list; visibility and follow-up can be per company.
-- **Articles**: Common catalog; prices and conditions per company (Odoo pricelists / supplierinfo + BTP conditions).
-- **Consolidation**: Use **Multi-companies → Consolidation Reports** to run turnover, cash/invoiced, margin by company/site, and shared clients distribution. Set **Company** on the template to filter to one entity or leave empty for the full group.
-- **Company settings**: **Multi-companies → Company Sharing Settings** (or Settings → Companies) to set per-company BTP SIREN and “Use shared clients/suppliers/articles”.
+## S1 — Restricted access (FR user cannot access BE)
+
+Goal:
+Validate company perimeter and visibility restrictions.
+
+Steps:
+1. Create/choose user with allowed companies = FR only.
+2. Login and check company switcher.
+3. Open leads/partners/documents list and test BE data access.
+
+Expected:
+- BE company not available in selector.
+- BE-only data not visible/accessible.
+
+Failure checks:
+- user still has BE in allowed companies,
+- global/admin groups assigned unintentionally.
+
+## S2 — Shared client with distinct FR/BE conditions
+
+Goal:
+Validate shared legal record + separate business conditions.
+
+Steps:
+1. Open client company (e.g., Bouygues Construction).
+2. Set `Shared Companies` = FR, BE.
+3. In Commercial Conditions, add one row for FR and one for BE.
+4. Save and create one quote in FR and one in BE for the same client.
+
+Expected:
+- one legal file (same partner),
+- one condition row per company (duplicates blocked),
+- quote in each company uses that company's condition (pricelist/payment term/incoterm when defined).
+
+Failure checks:
+- duplicate company condition row accepted (should fail),
+- condition company not in shared list (should fail).
+
+## S3 — Shared article with company-specific pricing context
+
+Goal:
+Validate shared article usage with company-specific conditions.
+
+Steps:
+1. In `Multi-companies -> Company Sharing Settings`, open FR and BE:
+   - enable `Use Shared Articles` on both companies,
+   - save both records.
+2. Open `Quotes & Articles -> Articles` and create or edit the article (example: Fireproof mortar):
+   - keep one single catalog record,
+   - ensure article is not restricted to one company only (shared usage).
+3. Configure selling context:
+   - create one pricelist/rule set for FR and one for BE,
+   - set different prices for the same article (example FR 10, BE 12).
+4. (Optional purchasing-side check) configure supplier or cost context per company for the same article.
+5. Switch current company to FR:
+   - create quote Q-FR, add the article, note price and conditions.
+6. Switch current company to BE:
+   - create quote Q-BE, add the same article, note price and conditions.
+7. Compare Q-FR vs Q-BE.
+
+Expected:
+- same article catalog record can be used,
+- company-specific business context can differ by entity.
+- Q-FR and Q-BE show different commercial values when configured differently (price, terms, supplier context).
+
+Failure checks:
+- company policy flags disabled while expecting shared behavior.
+- article accidentally company-restricted (visible only in one entity).
+- both companies using same pricelist unintentionally (no price difference).
+
+Pass/Fail:
+- Pass only if FR and BE can both use the same article record and obtain distinct configured context.
+
+## S4 — Shared lead, separate company exploitation
+
+Goal:
+Validate shared lead visibility and per-company processing capability.
+
+Steps:
+1. Switch to FR and create a new lead L-INTL:
+   - fill mandatory fields,
+   - set `Company = FR`.
+2. On the same lead:
+   - set `Sharing Type = Shared`,
+   - set `Shared Companies = FR, BE`,
+   - save.
+3. Still in FR:
+   - create one activity/follow-up note (FR context evidence).
+4. Switch current company to BE and open leads:
+   - search L-INTL and open it,
+   - verify BE user can read and update allowed fields,
+   - create a BE-specific activity/follow-up note.
+5. Switch back to FR and verify both traces are visible on the same shared lead record.
+
+Expected:
+- same lead is visible in FR and BE according to sharing,
+- each company team can process and create activities from its own context.
+- no duplicate lead creation required for cross-company exploitation.
+
+Failure checks:
+- missing company in `Shared Companies`,
+- lead user/company rights preventing access.
+- sharing type left as `exclusive` (BE cannot see lead).
+
+Pass/Fail:
+- Pass only if BE can access and process the FR-origin lead after sharing setup, and both teams keep traceability on one lead.
+
+## S5 — Group consolidation then entity detail
+
+Goal:
+Validate consolidated management view and per-entity drilldown.
+
+Steps:
+1. Open `Multi-companies -> Consolidation Reports`.
+2. Create template T-GROUP:
+   - `Scope = Consolidated Turnover by Company`,
+   - set `From Date` / `To Date` for a known period,
+   - leave `Company` empty (group mode),
+   - `Output Format = Excel`,
+   - run `Generate (no email)`.
+3. Open Export History and download T-GROUP file.
+4. Duplicate template as T-FR:
+   - set `Company = FR`,
+   - keep same dates,
+   - run `Generate (no email)`.
+5. Download T-FR file and compare with T-GROUP:
+   - T-GROUP must include multi-company rows + consolidated total,
+   - T-FR must only include FR.
+6. Repeat same check for:
+   - `Consolidated Cash / Invoiced by Company`,
+   - `Consolidated Net Margin by Company & Site`,
+   - optional: `Shared Clients Distribution`.
+
+Expected:
+- first report shows all company rows + consolidated total,
+- second report restricted to FR,
+- amounts consistent with HT definition.
+- export history contains successful jobs with downloadable files for each run.
+
+Failure checks:
+- date filters too restrictive,
+- no posted/in-scope source documents.
+- wrong company selected in template (not empty for group run).
+
+Pass/Fail:
+- Pass only if group templates consolidate correctly and company-filtered templates show entity-specific detail with coherent totals.
+
+---
+
+## 8) Troubleshooting Matrix
+
+| Problem | Root cause to check | Corrective action |
+| --- | --- | --- |
+| User sees wrong company data | Allowed companies / group rights mismatch | Review user allowed companies and BTP group memberships |
+| Shared client not visible in another company | Partner shared companies not set | Add target company in `Shared Companies` |
+| Cannot save commercial condition | Duplicate company line or invalid shared-company mapping | Keep one condition per company and align with shared list/policy |
+| Quote does not pick expected conditions | Missing condition row for `(client, company)` | Create/update `btp.company.commercial.condition` line |
+| Consolidated report seems wrong | Expecting HT but comparing TTC, or bad date scope | Validate source amounts and date filters |
+| Consolidated margin empty | No qualifying sites in period/company | Check site dates and selected company filter |
+
+---
+
+## 9) Final Validation Checklist
+
+- Company switcher only shows allowed companies.
+- Core records remain company-bound (`company_id`).
+- Shared client behavior works with strict per-company conditions.
+- Commercial condition uniqueness and consistency checks are enforced.
+- Shared leads are visible according to sharing settings.
+- Consolidation reports produce coherent company + group totals.
+
+---
+
+## 10) Sign-off Table
+
+| Scenario | Tester | Date | Result | Notes |
+| --- | --- | --- | --- | --- |
+| S1 restricted access |  |  | Pass/Fail |  |
+| S2 shared client + conditions |  |  | Pass/Fail |  |
+| S3 shared article usage |  |  | Pass/Fail |  |
+| S4 shared lead exploitation |  |  | Pass/Fail |  |
+| S5 consolidation |  |  | Pass/Fail |  |
 

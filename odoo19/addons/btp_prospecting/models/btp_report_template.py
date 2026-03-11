@@ -114,6 +114,15 @@ class BtpReportTemplate(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        consolidation_scopes = {
+            'consolidated_turnover',
+            'consolidated_cash',
+            'consolidated_margin',
+            'shared_clients_distribution',
+        }
+        for vals in vals_list:
+            if vals.get('scope') in consolidation_scopes and 'company_id' not in vals:
+                vals['company_id'] = False
         records = super().create(vals_list)
         for rec in records:
             self.env['btp.audit.log'].sudo().log(
@@ -124,6 +133,16 @@ class BtpReportTemplate(models.Model):
                 company_id=rec.company_id.id if rec.company_id else self.env.company.id,
             )
         return records
+
+    @api.onchange('scope')
+    def _onchange_scope_company_for_consolidation(self):
+        if self.scope in {
+            'consolidated_turnover',
+            'consolidated_cash',
+            'consolidated_margin',
+            'shared_clients_distribution',
+        }:
+            self.company_id = False
 
     def write(self, vals):
         result = super().write(vals)
@@ -804,7 +823,7 @@ class BtpReportTemplate(models.Model):
             cname = o.company_id.name if o.company_id else _('No company')
             if cid not in by_company:
                 by_company[cid] = {'name': cname, 'total': 0.0}
-            by_company[cid]['total'] += o.amount_total or 0
+            by_company[cid]['total'] += o.amount_untaxed or 0
         headers = [_('Company'), _('Turnover (HT)')]
         rows = [[v['name'], '%.2f' % v['total']] for _k, v in sorted(by_company.items(), key=lambda x: x[1]['name'])]
         total = sum(v['total'] for v in by_company.values())
@@ -833,7 +852,7 @@ class BtpReportTemplate(models.Model):
             cname = m.company_id.name if m.company_id else _('No company')
             if cid not in by_company:
                 by_company[cid] = {'name': cname, 'total': 0.0}
-            by_company[cid]['total'] += m.amount_total or 0
+            by_company[cid]['total'] += m.amount_untaxed or 0
         headers = [_('Company'), _('Invoiced Total (HT)')]
         rows = [[v['name'], '%.2f' % v['total']] for _k, v in sorted(by_company.items(), key=lambda x: x[1]['name'])]
         total = sum(v['total'] for v in by_company.values())
@@ -849,6 +868,19 @@ class BtpReportTemplate(models.Model):
         if self.company_id:
             domain.append(('company_id', '=', self.company_id.id))
         sites = self.env['project.project'].search(domain, order='company_id, btp_site_code')
+        if self.date_from or self.date_to:
+            def _site_ref_date(site):
+                return site.btp_end_date_actual or site.btp_start_date or (
+                    site.create_date.date() if site.create_date else False
+                )
+
+            sites = sites.filtered(
+                lambda s: (
+                    _site_ref_date(s)
+                    and (not self.date_from or _site_ref_date(s) >= self.date_from)
+                    and (not self.date_to or _site_ref_date(s) <= self.date_to)
+                )
+            )
         by_company = {}
         for s in sites:
             cid = s.company_id.id if s.company_id else 0

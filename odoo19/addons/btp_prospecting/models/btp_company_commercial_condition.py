@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from odoo import models, fields
+from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError
 
 
 class BtpCompanyCommercialCondition(models.Model):
@@ -33,4 +34,29 @@ class BtpCompanyCommercialCondition(models.Model):
         string='Incoterm'
     )
     notes = fields.Text(string='Notes')
+
+    _sql_constraints = [
+        (
+            'btp_partner_company_unique',
+            'unique(partner_id, company_id)',
+            'Only one commercial condition is allowed per client and operating company.',
+        ),
+    ]
+
+    @api.constrains('partner_id', 'company_id')
+    def _check_partner_company_consistency(self):
+        for rec in self:
+            if not rec.partner_id or not rec.company_id:
+                continue
+            if not rec.partner_id.is_company:
+                raise ValidationError(_('Commercial conditions can only be set on client companies.'))
+            shared_companies = rec.partner_id.btp_shared_company_ids
+            if shared_companies and rec.company_id not in shared_companies:
+                raise ValidationError(_(
+                    'Company "%s" is not in the client shared companies list.'
+                ) % rec.company_id.name)
+            if shared_companies and not rec.company_id.btp_shared_clients:
+                raise ValidationError(_(
+                    'Company "%s" has "Use Shared Clients" disabled. Enable it before adding shared client conditions.'
+                ) % rec.company_id.name)
 

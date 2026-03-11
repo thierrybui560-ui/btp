@@ -217,7 +217,12 @@ class SaleOrder(models.Model):
         for order in orders:
             if not order.btp_quote_number:
                 order.btp_quote_number = order._generate_quote_number(order.date_order)
+        orders._btp_apply_company_commercial_conditions()
         return orders
+
+    @api.onchange('partner_id', 'company_id')
+    def _onchange_btp_apply_company_commercial_conditions(self):
+        self._btp_apply_company_commercial_conditions()
 
     def action_confirm(self):
         self._btp_validate_subcontractor_documents()
@@ -253,6 +258,7 @@ class SaleOrder(models.Model):
         return {
             'name': ' - '.join(name_parts),
             'partner_id': self.partner_id.id,
+            'company_id': self.company_id.id,
             'user_id': self.user_id.id,
             'btp_site_address': partner.street or '',
             'btp_site_city': partner.city or '',
@@ -296,7 +302,42 @@ class SaleOrder(models.Model):
                 if not quote.btp_sent_date:
                     quote.btp_sent_date = fields.Datetime.now()
 
-        return super(SaleOrder, self).write(vals)
+        result = super(SaleOrder, self).write(vals)
+        if any(k in vals for k in ('partner_id', 'company_id')):
+            self._btp_apply_company_commercial_conditions()
+        return result
+
+    def _btp_apply_company_commercial_conditions(self):
+        """Apply client commercial conditions for the order company when available."""
+        if self.env.context.get('btp_skip_apply_conditions'):
+            return
+        Condition = self.env['btp.company.commercial.condition']
+        for order in self:
+            if not order.partner_id or not order.company_id:
+                continue
+            cond = Condition.search([
+                ('partner_id', '=', order.partner_id.id),
+                ('company_id', '=', order.company_id.id),
+            ], limit=1)
+            if not cond:
+                continue
+            vals = {}
+            if cond.pricelist_id:
+                vals['pricelist_id'] = cond.pricelist_id.id
+            if cond.payment_term_id:
+                vals['payment_term_id'] = cond.payment_term_id.id
+            # Keep compatibility with sale.order field naming across versions.
+            if cond.incoterm_id:
+                if 'incoterm_id' in order._fields:
+                    vals['incoterm_id'] = cond.incoterm_id.id
+                elif 'incoterm' in order._fields:
+                    vals['incoterm'] = cond.incoterm_id.id
+            if not vals:
+                continue
+            if order.id:
+                order.with_context(btp_skip_apply_conditions=True).write(vals)
+            else:
+                order.update(vals)
 
     def _generate_quote_number(self, date_order=None):
         """Generate quote number in format YYYYMMNNN using an ir.sequence with monthly ranges."""

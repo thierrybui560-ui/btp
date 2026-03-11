@@ -188,10 +188,12 @@
                 ('is_company', '=', True),
                 '|',
                 ('btp_assigned_salesperson_id', '=', user.id),
-                ('btp_shared_company_ids', 'in', [user.company_id.id]),
+                ('btp_shared_company_ids', 'in', company_ids),
                 '&amp;',
                 ('is_company', '=', False),
-                ('btp_contact_assigned_salesperson_id', '=', user.id)
+                '|',
+                ('btp_contact_assigned_salesperson_id', '=', user.id),
+                ('parent_id.btp_shared_company_ids', 'in', company_ids)
             ]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
@@ -212,10 +214,12 @@
                 ('is_company', '=', True),
                 '|',
                 ('btp_assigned_salesperson_id', '=', user.id),
-                ('btp_shared_company_ids', 'in', [user.company_id.id]),
+                ('btp_shared_company_ids', 'in', company_ids),
                 '&amp;',
                 ('is_company', '=', False),
-                ('btp_contact_assigned_salesperson_id', '=', user.id)
+                '|',
+                ('btp_contact_assigned_salesperson_id', '=', user.id),
+                ('parent_id.btp_shared_company_ids', 'in', company_ids)
             ]</field>
             <field name="perm_read" eval="False"/>
             <field name="perm_write" eval="True"/>
@@ -239,7 +243,19 @@
         <record id="btp_partner_rule_non_sales" model="ir.rule">
             <field name="name">BTP Partner: Non-Sales</field>
             <field name="model_id" ref="base.model_res_partner"/>
-            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="domain_force">[
+                '|',
+                '|',
+                ('id', '=', user.partner_id.id),
+                ('id', 'in', user.company_ids.partner_id.ids),
+                '|',
+                '&amp;',
+                ('is_company', '=', True),
+                ('btp_shared_company_ids', 'in', company_ids),
+                '&amp;',
+                ('is_company', '=', False),
+                ('parent_id.btp_shared_company_ids', 'in', company_ids)
+            ]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="False"/>
             <field name="perm_create" eval="False"/>
@@ -250,7 +266,27 @@
         <record id="btp_partner_rule_manager" model="ir.rule">
             <field name="name">BTP Partner: Manager</field>
             <field name="model_id" ref="base.model_res_partner"/>
-            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="domain_force">[
+                '|',
+                '|',
+                ('id', '=', user.partner_id.id),
+                ('id', 'in', user.company_ids.partner_id.ids),
+                '|',
+                '&amp;',
+                ('is_company', '=', True),
+                '|',
+                ('btp_assigned_salesperson_id', '=', user.id),
+                '|',
+                ('btp_assigned_salesperson_id', 'in', user.all_subordinate_ids.ids),
+                ('btp_shared_company_ids', 'in', company_ids),
+                '&amp;',
+                ('is_company', '=', False),
+                '|',
+                ('btp_contact_assigned_salesperson_id', '=', user.id),
+                '|',
+                ('btp_contact_assigned_salesperson_id', 'in', user.all_subordinate_ids.ids),
+                ('parent_id.btp_shared_company_ids', 'in', company_ids)
+            ]</field>
             <field name="perm_read" eval="True"/>
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="True"/>
@@ -392,6 +428,13 @@
             <field name="name">BTP Audit Log: Multi-Company</field>
             <field name="model_id" ref="model_btp_audit_log"/>
             <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+            <field name="global" eval="True"/>
+        </record>
+
+        <record id="btp_company_commercial_condition_rule_company" model="ir.rule">
+            <field name="name">BTP Commercial Condition: Multi-Company</field>
+            <field name="model_id" ref="model_btp_company_commercial_condition"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
             <field name="global" eval="True"/>
         </record>
 

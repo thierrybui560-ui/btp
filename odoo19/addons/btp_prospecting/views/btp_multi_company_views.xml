@@ -39,7 +39,7 @@
         <field name="view_mode">list,form</field>
         <field name="domain">[('scope', 'in', ['consolidated_turnover', 'consolidated_cash', 'consolidated_margin', 'shared_clients_distribution'])]</field>
         <field name="search_view_id" ref="view_btp_report_template_search"/>
-        <field name="context">{'default_scope': 'consolidated_turnover'}</field>
+        <field name="context">{'default_scope': 'consolidated_turnover', 'default_company_id': False}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Create a consolidation report</p>
             <p>Turnover by company, cash/invoiced by company, net margin by company and site, or shared clients distribution. Use "Company" on the template to filter to one entity, or leave empty for full group consolidation.</p>

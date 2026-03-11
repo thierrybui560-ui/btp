@@ -88,6 +88,7 @@ class BtpDepositInvoiceWizard(models.TransientModel):
         move = self.env['account.move'].create({
             'move_type': 'out_invoice',
             'partner_id': site.partner_id.id,
+            'company_id': company.id,
             'invoice_date': fields.Date.today(),
             'ref': _('Deposit - %s') % (site.name or site.btp_site_code or ''),
             'btp_invoice_type': 'deposit',
